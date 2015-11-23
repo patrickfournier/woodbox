@@ -1,26 +1,26 @@
-from flask_restful import Resource, abort
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, print_function, unicode_literals
 
 from marshmallow_jsonapi import fields
 
 from app.jsonapi_schema import JSONAPISchema
+from app.record_api import RecordAPI, RecordListAPI
+from app.schema_validator import is_not_empty
 from app.video_sequence_model import VideoSequenceModel
 
+
 class VideoSequenceSchema(JSONAPISchema):
-    title = fields.Str()
+    title = fields.Str(required=True, validate=is_not_empty)
     location = fields.Str()
-    sequence_number = fields.Str()
+    sequence_number = fields.Int()
     date_recorded = fields.Str(attribute='date_created')
+    processed = fields.Bool()
     upper_name = fields.Function(lambda obj: obj.title.upper())
 
-class VideoSequenceList(Resource):
-    def get(self):
-        items = VideoSequenceModel.query.all()
-        return VideoSequenceSchema().dump(items, many=True).data
+class VideoSequenceAPI(RecordAPI):
+    model_class = VideoSequenceModel
+    schema_class = VideoSequenceSchema
 
-class VideoSequence(Resource):
-    def get(self, item_id):
-        item = VideoSequenceModel.query.get(item_id)
-        if item is None:
-            abort(404, message="Video sequence {} doesn't exist".format(item_id))
-        else:
-            return VideoSequenceSchema().dump(item).data
+class VideoSequenceListAPI(RecordListAPI):
+    model_class = VideoSequenceModel
+    schema_class = VideoSequenceSchema

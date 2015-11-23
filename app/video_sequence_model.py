@@ -7,11 +7,10 @@ class VideoSequenceModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(80))
     location = db.Column(db.String(80))
-    sequence_number = db.Column(db.String(80))
+    sequence_number = db.Column(db.Integer)
     date_created = db.Column(db.String(80))
+    processed = db.Column(db.Boolean)
 
-    def __init__(self, title, location, sequence_number, date_created):
-        self.title = title
-        self.location = location
-        self.sequence_number = sequence_number
-        self.date_created = date_created
+    def __repr__(self):
+        return "<VideoSequenceModel(title='%s', Location='%s', Sequence number='%s')>" % (
+            self.title, self.location, self.sequence_number)
