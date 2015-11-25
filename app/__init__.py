@@ -4,24 +4,23 @@ from __future__ import absolute_import, print_function, unicode_literals
 from flask import Flask, make_response, jsonify
 from flask.ext.sqlalchemy import SQLAlchemy
 
+from config import config
+
 db = SQLAlchemy()
 
-from .views import populate_db
 
-def create_app():
+def create_app(config_name):
     app = Flask(__name__)
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:////tmp/martaban.db'
-    #app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql://martaban:martaban@localhost/martaban'
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-    app.config["SQLALCHEMY_ECHO"] = True
     db.init_app(app)
 
     from .api_v1 import blueprint as api_v1_blueprint
     app.register_blueprint(api_v1_blueprint, url_prefix='/api/v1')
 
-    app.add_url_rule('/init', 'init', populate_db)
     return app
+
 
 def init_db():
     db.drop_all()

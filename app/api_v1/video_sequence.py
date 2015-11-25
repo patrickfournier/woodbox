@@ -6,7 +6,7 @@ from marshmallow_jsonapi import fields
 from app.jsonapi_schema import JSONAPISchema
 from app.record_api import RecordAPI, RecordListAPI
 from app.schema_validator import is_not_empty
-from app.video_sequence_model import VideoSequenceModel
+from app.models.video_sequence_model import VideoSequenceModel
 
 
 class VideoSequenceSchema(JSONAPISchema):

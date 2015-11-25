@@ -8,7 +8,7 @@ from flask.ext.script import Manager, Shell, Command
 
 from app import create_app, init_db
 
-app = create_app()
+app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
 # CAUTION: It is a security issue to use this middleware in a non-proxy setup
@@ -26,7 +26,7 @@ def make_shell_context():
     return dict(app=app)
 
 manager.add_command('shell', Shell(make_context=make_shell_context))
-manager.add_command('init_db', InitDB())
+manager.add_command('init_db', InitDB(), help="Initialize the database.")
 
 if __name__ == '__main__':
     manager.run()

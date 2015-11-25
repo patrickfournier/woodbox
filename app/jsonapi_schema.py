@@ -44,7 +44,7 @@ class JSONAPISchema(Schema):
     class defining the JSONAPI type. This type is the dasherized
     version of the subclass name, minus the "Schema" suffix.
 
-    Subclass names should end with Schema (eg VideoSequenceSchema).
+    Subclass names should end with Schema (eg BlogPostSchema).
 
     """
     __metaclass__ = JSONAPISchemaMetaclass
