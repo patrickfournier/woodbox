@@ -14,12 +14,12 @@ Installation
 ============
 
 1. Download the code with git
-2. Install the required packages: `pip install -r REQUIREMENTS.txt`
+2. Install the required packages: ``pip install -r REQUIREMENTS.txt``
 
 Running
 =======
 
-Woodbox comes with a manage.py script. Use `manage.py runserver -d -r`
+Woodbox comes with a manage.py script. Use ``manage.py runserver -d -r``
 to run the Woodbox server in debug mode with automatic reloading.
 
 Once it is running, you can go to http://localhost:5000/init to add
