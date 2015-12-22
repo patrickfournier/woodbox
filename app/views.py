@@ -2,16 +2,40 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 from . import db
-from .models.example_note_model import ExampleNoteModel
+from .models.video_sequence_model import FolderNodeModel, DocumentNodeModel, VideoSequenceModel
 
 def populate_db():
     db.drop_all()
     db.create_all()
-    data = {'title': 'Good restaurant', 'location': 'Montreal', 'priority': 1, 'date_created':  '2015-04-23T13:38', 'obsolete': False}
-    vs = ExampleNoteModel(**data)
+
+    data = {'title': 'root', 'parent_node_id': None}
+    vs = FolderNodeModel(**data)
     db.session.add(vs)
-    data = {'title': 'Art gallery', 'location': 'New York', 'priority': 5, 'date_created': '2015-04-23T14:38', 'obsolete': False}
-    vs = ExampleNoteModel(**data)
+    db.session.commit()
+    root_id = vs.id
+
+    data = {'title': 'usr', 'parent_node_id': root_id}
+    vs = FolderNodeModel(**data)
     db.session.add(vs)
+
+    data = {'title': 'var', 'parent_node_id': root_id}
+    vs = FolderNodeModel(**data)
+    db.session.add(vs)
+
+    data = {'title': 'home', 'parent_node_id': root_id}
+    vs = FolderNodeModel(**data)
+    db.session.add(vs)
+    db.session.commit()
+    root_id = vs.id
+
+    data = {'title': 'MyDocument', 'date_unknown': True}
+    vs = VideoSequenceModel(**data)
+    db.session.add(vs)
+    db.session.commit()
+
+    data = {'document_id': vs.id, 'parent_node_id': root_id}
+    doc = DocumentNodeModel(**data)
+    db.session.add(doc)
+
     db.session.commit()
     return 'DB Initialization Done'

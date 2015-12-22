@@ -28,6 +28,10 @@ class RecordAPI(Resource):
     """
 
     @classmethod
+    def register_resource(cls, flask_restful_api):
+        flask_restful_api.add_resource(cls, '/' + cls.schema_class.Meta.type_ + '/<item_id>')
+
+    @classmethod
     def scoped_endpoint(cls):
         return '.' + cls.endpoint
 
@@ -109,6 +113,11 @@ class RecordListAPI(Resource):
 
     __metaclass__ = RecordListAPIMetaclass
 
+    @classmethod
+    def register_resource(cls, flask_restful_api):
+        flask_restful_api.add_resource(cls, '/' + cls.schema_class.Meta.type_)
+
+
     def get(self):
         items = self.model_class.query.all()
         return self.schema_class().dump(items, many=True).data
@@ -121,10 +130,12 @@ class RecordListAPI(Resource):
         else:
             return '', 415, {'Accept-Patch': 'application/vnd.api+json'}
         try:
+            print(input_data)
+            print(schema)
             data, errors = schema.load(input_data)
         except ValidationError as err:
             return {'message': err.message}, 415
-        except:
+        except Exception as err:
             return {'message': err.message}, 422
 
         new_item = self.model_class(**data)
