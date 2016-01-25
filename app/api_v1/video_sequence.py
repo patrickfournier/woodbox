@@ -5,9 +5,7 @@ from marshmallow import pre_load, post_dump
 from marshmallow_jsonapi import fields
 
 from app.jsonapi_schema import JSONAPISchema, underscores_to_dashes, inflector
-from app.record_api import RecordAPI, RecordListAPI
-from app.schema_validator import is_not_empty
-from app.models.video_sequence_model import NodeModel, FolderNodeModel, DocumentNodeModel
+from app.models.video_sequence_model import FolderNodeModel, DocumentNodeModel
 
 class NodeSchema(JSONAPISchema):
     node_type = fields.String(dump_only=True, attribute='type')
@@ -20,17 +18,10 @@ class NodeSchema(JSONAPISchema):
 
     parent_node_id = fields.Integer(attribute='parent_node_id')
 
-class NodeAPI(RecordAPI):
-    model_class = NodeModel
-    schema_class = NodeSchema
-
-class NodeListAPI(RecordListAPI):
-    model_class = NodeModel
-    schema_class = NodeSchema
-
 
 class FolderNodeSchema(NodeSchema):
     parent_folder = fields.Nested('self', many=False, attribute='parent_node', exclude=('content',))
+    title = fields.String()
 
     #content = fields.Relationship(
     #    related_url='/folders/{parent_folder_id}/content',
@@ -40,28 +31,26 @@ class FolderNodeSchema(NodeSchema):
     #)
     content = fields.Nested('NodeSchema', many=True, exclude=('parent_node',))
 
-class FolderNodeAPI(RecordAPI):
-    model_class = FolderNodeModel
-    schema_class = FolderNodeSchema
-
-class FolderNodeListAPI(RecordListAPI):
-    model_class = FolderNodeModel
-    schema_class = FolderNodeSchema
-
-
 class DocumentNodeSchema(NodeSchema):
     parent_folder = fields.Nested('self', many=False, attribute='parent_node', exclude=('content',))
     document = fields.Nested('DocumentSchema', many=False)
 
-class DocumentNodeAPI(RecordAPI):
-    model_class = DocumentNodeModel
-    schema_class = DocumentNodeSchema
-
-class DocumentNodeListAPI(RecordListAPI):
-    model_class = DocumentNodeModel
-    schema_class = DocumentNodeSchema
-
-
 class DocumentSchema(JSONAPISchema):
     document_type = fields.String()
     title = fields.String()
+
+
+class ContentNodeSchema(JSONAPISchema):
+    title = fields.Method('get_title')
+    node_type = fields.Method('get_type')
+
+    def get_title(self, obj):
+        if isinstance(obj, FolderNodeModel):
+            return obj.title
+        elif isinstance(obj, DocumentNodeModel):
+            return obj.document.title
+        return ''
+
+    def get_type(self, obj):
+        type_name = obj.type[:-6]
+        return underscores_to_dashes(type_name)

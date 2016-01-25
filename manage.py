@@ -4,9 +4,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 from werkzeug.contrib.fixers import ProxyFix
-from flask.ext.script import Manager, Shell, Command
+from flask.ext.script import Manager, Server, Shell, Command
 
-from app import create_app, init_db
+from app import create_app, init_db, create_server
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 
@@ -18,6 +18,10 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 
 manager = Manager(app)
 
+class TwistedServer(Command):
+    def run(self):
+        create_server(app, debug=True) # FIXME: debug value from config
+
 class InitDB(Command):
     def run(self):
         init_db()
@@ -25,6 +29,7 @@ class InitDB(Command):
 def make_shell_context():
     return dict(app=app)
 
+manager.add_command('runserver', TwistedServer())
 manager.add_command('shell', Shell(make_context=make_shell_context))
 manager.add_command('init_db', InitDB(), help="Initialize the database.")
 

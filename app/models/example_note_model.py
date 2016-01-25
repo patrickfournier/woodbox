@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, unicode_literals
 
-from app import db
+from app.db import db
 
 class ExampleNoteModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)

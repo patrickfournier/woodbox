@@ -34,7 +34,6 @@ class DevelopmentConfig(Config):
         from app.views import populate_db
         app.add_url_rule('/init', 'init', populate_db)
 
-
 class ProductionConfig(Config):
     SYSLOG_ADDRESS = os.environ.get('WOODBOX_SYSLOG_ADDRESS') or '/dev/log'
 

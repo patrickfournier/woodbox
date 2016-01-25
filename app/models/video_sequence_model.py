@@ -3,7 +3,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from sqlalchemy.ext.declarative import declared_attr
 
-from app import db
+from app.db import db
 
 class NodeModel(db.Model):
     id = db.Column(db.Integer, db.Sequence('node_model_id_seq'), primary_key=True)
@@ -18,7 +18,6 @@ class NodeModel(db.Model):
         'polymorphic_identity': 'node_model',
         'polymorphic_on': type
     }
-
 
 class FolderNodeModel(NodeModel):
     id = db.Column(db.Integer, db.ForeignKey('node_model.id'), primary_key=True)

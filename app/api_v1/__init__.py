@@ -4,7 +4,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 from flask import Blueprint, make_response, jsonify
 from flask_restful import Api
 
-from .video_sequence import NodeAPI, NodeListAPI, FolderNodeAPI, FolderNodeListAPI, DocumentNodeAPI, DocumentNodeListAPI
+from app.record_api import make_api
+from app.models.user_model import UserModel
+from app.models.video_sequence_model import NodeModel, FolderNodeModel, DocumentNodeModel
+
+from .user import UserSchema
+from .video_sequence import NodeSchema, FolderNodeSchema, DocumentNodeSchema, ContentNodeSchema
 
 blueprint = Blueprint('api_v1', __name__)
 api = Api(blueprint)
@@ -15,9 +20,9 @@ def output_jsonapi(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
-NodeListAPI.register_resource(api)
-NodeAPI.register_resource(api)
-FolderNodeListAPI.register_resource(api)
-FolderNodeAPI.register_resource(api)
-DocumentNodeListAPI.register_resource(api)
-DocumentNodeAPI.register_resource(api)
+make_api(api, 'User', UserModel, UserSchema)
+
+make_api(api, 'Node', NodeModel, NodeSchema)
+make_api(api, 'FolderNode', FolderNodeModel, FolderNodeSchema)
+make_api(api, 'DocumentNode', DocumentNodeModel, DocumentNodeSchema)
+make_api(api, 'ContentNode', NodeModel, ContentNodeSchema, ro=True)

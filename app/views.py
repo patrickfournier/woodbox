@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, unicode_literals
 
-from . import db
+from .db import db
 from .models.video_sequence_model import FolderNodeModel, DocumentNodeModel, VideoSequenceModel
+from .models.user_model import UserModel
 
 def populate_db():
     db.drop_all()
@@ -35,6 +36,12 @@ def populate_db():
 
     data = {'document_id': vs.id, 'parent_node_id': root_id}
     doc = DocumentNodeModel(**data)
+    db.session.add(doc)
+
+    db.session.commit()
+
+    data = {'username': "patrick", 'password': '123qwe', 'name': "Patrick Fournier"}
+    doc = UserModel(**data)
     db.session.add(doc)
 
     db.session.commit()
