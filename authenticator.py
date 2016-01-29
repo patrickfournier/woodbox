@@ -34,7 +34,7 @@ except ImportError:
         return result
 
 
-class Authenticator(object):
+class HMACAuthenticator(object):
     """Analyze a request and find from which user it originates."""
 
     def parse_authorization_header(self, header):
@@ -167,8 +167,8 @@ class Authenticator(object):
             for h in six.iterkeys(request.headers):
                 headers[h.lower().strip()] = request.headers[h].strip()
 
-            import pprint
-            pprint.pprint(headers)
+            #import pprint
+            #pprint.pprint(headers)
 
             g.user = None
             g.user_reason = "No valid authorization header."
@@ -178,8 +178,7 @@ class Authenticator(object):
                 if method[:8].lower() == 'woodbox-':
                     self.verify(method[8:].lower(), auth, headers)
 
-            print('User: ', g.user, g.user_reason)
-
+            print ('User ', g.user, g.user_reason)
 
             return f(*args, **kwargs)
 

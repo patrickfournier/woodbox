@@ -9,11 +9,10 @@ from flask_restful import Resource, abort
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.exc import IntegrityError
 
-from .authenticator import Authenticator
 from .db import db
 from .push_service import NotificationService
 
-class RORecordAPI(Resource):
+class RecordAPI(Resource):
     """Base class to expose a db.Model rendered by a JSONAPISchema through
     a REST API implementing GET, DELETE and PATCH.
 
@@ -38,25 +37,25 @@ class RORecordAPI(Resource):
 
     def get(self, item_id):
         try:
-            item = self.model_class.query.get(item_id)
+            query = self.model_class.query
+            if self.access_control is not None:
+                exp = self.access_control.read(g.user, self.model_class, item_id)
+                query = query.filter(exp)
+            item = query.filter_by(id=item_id).first()
         except IntegrityError:
-            abort(404, message="{} {} doesn't exist".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{} {} doesn't exist.".format(self.schema_class.Meta.type_, item_id))
 
         if not item:
-            abort(404, message="{} {} doesn't exist".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{} {} doesn't exist or you do not have permission to view it.".format(self.schema_class.Meta.type_, item_id))
         else:
             return self.schema_class().dump(item).data
 
     def delete(self, item_id):
-        abort(405)
-
-    def patch(self, item_id):
-        abort(405)
-
-
-class RecordAPI(RORecordAPI):
-    def delete(self, item_id):
-        count = self.model_class.query.filter_by(id=item_id).delete()
+        query = self.model_class.query
+        if self.access_control is not None:
+            exp = self.access_control.delete(g.user, self.model_class, item_id)
+            query = query.filter(exp)
+        count = query.filter_by(id=item_id).delete()
         if count > 0:
             db.session.commit()
             NotificationService.broadcast_message({'event': 'deleted',
@@ -64,7 +63,7 @@ class RecordAPI(RORecordAPI):
                                                    'id': item_id})
             return '', 204
         else:
-            abort(404, message="{} {} doesn't exist".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{} {} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id))
 
     def patch(self, item_id):
         schema = self.schema_class()
@@ -80,10 +79,14 @@ class RecordAPI(RORecordAPI):
         except Exception as err:
             return {'message': err.message}, 422
 
-        item = self.model_class.query.get(item_id)
+        query = self.model_class.query
+        if self.access_control is not None:
+            exp = self.access_control.update(g.user, self.model_class, item_id)
+            query = query.filter(exp)
+        item = query.filter_by(id=item_id).first()
         if not item:
             # According to RFC5789, we may create the ressource, but we do not.
-            abort(404, message="{} {} doesn't exist".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{} {} doesn't exist or you do not have permission to modify it.".format(self.schema_class.Meta.type_, item_id))
 
         for key in data:
             setattr(item, key, data[key])
@@ -94,7 +97,7 @@ class RecordAPI(RORecordAPI):
         return '', 204, {'Content-Location': url_for(self.scoped_endpoint(), item_id=item_id)}
 
 
-class RORecordListAPI(Resource):
+class RecordListAPI(Resource):
     """Base class to expose a db.Model rendered by a JSONAPISchema through
     a REST API implementing LIST and POST.
 
@@ -117,14 +120,13 @@ class RORecordListAPI(Resource):
         flask_restful_api.add_resource(cls, '/' + cls.schema_class.Meta.type_)
 
     def get(self):
-        items = self.model_class.query.all()
+        query = self.model_class.query
+        if self.access_control is not None:
+            exp = self.access_control.read(g.user, self.model_class, None)
+            query = query.filter(exp)
+        items = query.all()
         return self.schema_class().dump(items, many=True).data
 
-    def post(self):
-        abort(405)
-
-
-class RecordListAPI(RORecordListAPI):
     def post(self):
         schema = self.schema_class()
         if request.mimetype == 'application/vnd.api+json':
@@ -148,29 +150,30 @@ class RecordListAPI(RORecordListAPI):
                                                      item_id=new_item.id)}
 
 
-authenticator = Authenticator()
-
-def make_api(flask_restful_app, name, model_class, schema_class, ro=False):
-    # Create a subclass of [RO]Record[List]API and register the resource with the app.
-    if ro:
-        t = type(str(name+'API'), (RORecordAPI,),
-                 {'method_decorators': [authenticator.authenticate],
-                  'model_class': model_class,
-                  'schema_class': schema_class})
-        t.register_resource(flask_restful_app)
-        t = type(str(name+'ListAPI'), (RORecordListAPI,),
-                 {'method_decorators': [authenticator.authenticate],
-                  'model_class': model_class,
-                  'schema_class': schema_class, 'record_api': t})
-        t.register_resource(flask_restful_app)
+def make_api(flask_restful_app, name, model_class, schema_class,
+             api_authorizers=None, record_authorizer=None):
+    # TODO: we could have a schema_class per role
+    if api_authorizers is None:
+        method_decorators = []
     else:
-        t = type(str(name+'API'), (RecordAPI,),
-                 {'method_decorators': [authenticator.authenticate],
-                  'model_class': model_class,
-                  'schema_class': schema_class})
-        t.register_resource(flask_restful_app)
-        t = type(str(name+'ListAPI'), (RecordListAPI,),
-                 {'method_decorators': [authenticator.authenticate],
-                  'model_class': model_class,
-                  'schema_class': schema_class, 'record_api': t})
-        t.register_resource(flask_restful_app)
+        method_decorators = api_authorizers
+    method_decorators.append(flask_restful_app.authenticator.authenticate)
+
+    # Create a subclass of Record[List]API and register the resource with the app.
+    t = type(str(name+'API'), (RecordAPI,),
+             {'method_decorators': method_decorators,
+              'resource_name': name,
+              'model_class': model_class,
+              'schema_class': schema_class,
+              'access_control': record_authorizer
+             })
+    t.register_resource(flask_restful_app)
+    t = type(str(name+'ListAPI'), (RecordListAPI,),
+             {'method_decorators': method_decorators,
+              'resource_name': name,
+              'model_class': model_class,
+              'schema_class': schema_class,
+              'access_control': record_authorizer,
+              'record_api': t
+             })
+    t.register_resource(flask_restful_app)

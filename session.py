@@ -52,3 +52,11 @@ def invalidate_session():
             return jsonify(err=4, message="Session could not be deleted.")
 
     return jsonify(err=0)
+
+
+def add_session_management_urls(app, authenticate_url='/authenticate',
+                                validate_url='/validate-session',
+                                invalidate_url='/invalidate-session'):
+    app.add_url_rule(authenticate_url, 'authenticate', authenticate, methods=['POST'])
+    app.add_url_rule(validate_url, 'validate_session', validate_session, methods=['POST'])
+    app.add_url_rule(invalidate_url, 'invalidate_session', invalidate_session, methods=['POST'])

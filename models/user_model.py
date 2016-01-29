@@ -3,8 +3,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import binascii
 
-from app.db import db
-from app.pbkdf2_hmac import pbkdf2_hmac
+from ..db import db
+from ..utils.pbkdf2_hmac import pbkdf2_hmac
 
 
 class UserModel(db.Model):

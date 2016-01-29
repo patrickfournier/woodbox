@@ -7,7 +7,7 @@ import os
 
 from datetime import datetime, timedelta
 
-from app.db import db
+from ..db import db
 
 # Should be renamed Credentials
 class SessionModel(db.Model):
