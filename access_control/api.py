@@ -8,16 +8,7 @@ import miracle
 from flask import g
 from flask_restful import abort
 
-
-def get_roles(user):
-    if user is None:
-        roles = ['anonymous']
-    elif user == 1:
-        roles = ['admin']
-    else:
-        roles = ['user', 'user-' + str(user)]
-    return roles
-
+from ..models.user_model import UserModel
 
 class Acl(miracle.Acl):
     def authorize(self, f):
@@ -29,7 +20,12 @@ class Acl(miracle.Acl):
                                   'patch': 'update',
                                   'delete': 'delete'}
 
-            roles = get_roles(g.user)
+            if g.user is None:
+                roles = ['__anonymous']
+            else:
+                user = UserModel.query.get(g.user)
+                roles = [r.rolename for r in user.roles]
+
             if self.check_any(roles, myself.resource_name, funcname_to_action[f.__name__]):
                 return f(*args, **kwargs)
             else:

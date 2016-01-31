@@ -39,8 +39,10 @@ class RecordAPI(Resource):
         try:
             query = self.model_class.query
             if self.access_control is not None:
-                exp = self.access_control.read(g.user, self.model_class, item_id)
-                query = query.filter(exp)
+                query = self.access_control.alter_query_for_read(query,
+                                                                 g.user,
+                                                                 self.resource_name,
+                                                                 self.model_class)
             item = query.filter_by(id=item_id).first()
         except IntegrityError:
             abort(404, message="{} {} doesn't exist.".format(self.schema_class.Meta.type_, item_id))
@@ -53,8 +55,10 @@ class RecordAPI(Resource):
     def delete(self, item_id):
         query = self.model_class.query
         if self.access_control is not None:
-            exp = self.access_control.delete(g.user, self.model_class, item_id)
-            query = query.filter(exp)
+            query = self.access_control.alter_query_for_delete(query,
+                                                               g.user,
+                                                               self.resource_name,
+                                                               self.model_class)
         count = query.filter_by(id=item_id).delete()
         if count > 0:
             db.session.commit()
@@ -81,8 +85,10 @@ class RecordAPI(Resource):
 
         query = self.model_class.query
         if self.access_control is not None:
-            exp = self.access_control.update(g.user, self.model_class, item_id)
-            query = query.filter(exp)
+            query = self.access_control.alter_query_for_update(query,
+                                                               g.user,
+                                                               self.resource_name,
+                                                               self.model_class)
         item = query.filter_by(id=item_id).first()
         if not item:
             # According to RFC5789, we may create the ressource, but we do not.
@@ -122,8 +128,10 @@ class RecordListAPI(Resource):
     def get(self):
         query = self.model_class.query
         if self.access_control is not None:
-            exp = self.access_control.read(g.user, self.model_class, None)
-            query = query.filter(exp)
+            query = self.access_control.alter_query_for_read(query,
+                                                             g.user,
+                                                             self.resource_name,
+                                                             self.model_class)
         items = query.all()
         return self.schema_class().dump(items, many=True).data
 
