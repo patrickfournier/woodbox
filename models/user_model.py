@@ -3,6 +3,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import binascii
 
+from flask import current_app
+
 from ..db import db
 from ..utils.pbkdf2_hmac import pbkdf2_hmac
 
@@ -31,6 +33,6 @@ class UserModel(db.Model):
 
     @staticmethod
     def hash_password(password):
-        salt = 'salt'
+        salt = current_app.config['PASSWORD_SALT']
         bin_hash = pbkdf2_hmac(str('sha256'), password, salt, 200000)
         return binascii.hexlify(bin_hash)

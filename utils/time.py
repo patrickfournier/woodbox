@@ -30,12 +30,3 @@ def strptime_iso8601(timestamp):
             dt += delta
 
     return dt
-
-
-if __name__ == "__main__":
-    tests = ['20101231T142342Z', '20101231T142342-0500',
-             '20101231T142342+0100', '20101231T232342-0500',
-             '20101231T002342+0100']
-
-    for t in tests:
-        print(t, strptime_iso8601(t))
