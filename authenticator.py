@@ -14,7 +14,7 @@ import pytz
 from flask import request, g
 from flask_restful import abort
 
-from .models.session_model import SessionModel
+from .models.session_model import WBSessionModel
 from .utils.time import strptime_iso8601
 
 
@@ -114,7 +114,7 @@ class HMACAuthenticator(object):
             return False
 
         # Load the session
-        session = SessionModel.query.filter_by(session_id=credential).first()
+        session = WBSessionModel.query.filter_by(session_id=credential).first()
         if not session:
             g.user = None
             g.user_reason = 'Invalid credential.'

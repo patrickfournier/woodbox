@@ -4,19 +4,19 @@ from __future__ import absolute_import, print_function, unicode_literals
 from flask import jsonify, request
 
 from .db import db
-from .models.session_model import SessionModel
-from .models.user_model import UserModel
+from .models.session_model import WBSessionModel
+from .models.user_model import WBUserModel
 
 
 def authenticate():
     try:
         name = request.form['username']
-        user = UserModel.query.filter_by(username=name).first()
+        user = WBUserModel.query.filter_by(username=name).first()
         if user:
             password = request.form['password']
-            hashed_password = UserModel.hash_password(password)
+            hashed_password = WBUserModel.hash_password(password)
             if user.hashed_password == hashed_password:
-                session = SessionModel(user_id=user.id)
+                session = WBSessionModel(user_id=user.id)
                 db.session.add(session)
                 db.session.commit()
                 response = jsonify(username=name, err=0,
@@ -34,7 +34,7 @@ def authenticate():
 
 def validate_session():
     session_id = request.form['session_id']
-    session = SessionModel.query.filter_by(session_id=session_id).first()
+    session = WBSessionModel.query.filter_by(session_id=session_id).first()
     if session:
         if session.touch():
             return jsonify(err=0)
@@ -44,7 +44,7 @@ def validate_session():
 
 def invalidate_session():
     session_id = request.form['session_id']
-    session = SessionModel.query.filter_by(session_id=session_id).first()
+    session = WBSessionModel.query.filter_by(session_id=session_id).first()
     if session:
         count = db.session.delete(session)
         db.session.commit()

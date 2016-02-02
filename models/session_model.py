@@ -10,18 +10,24 @@ from datetime import datetime, timedelta
 from ..db import db
 
 # Should be renamed Credentials
-class SessionModel(db.Model):
+class WBSessionModel(db.Model):
     session_id_byte_length = 24
     secret_byte_length = 32
 
     session_max_idle_time = 60*60
 
-    id = db.Column(db.Integer, db.Sequence('session_model_id_seq'), primary_key=True)
+    id = db.Column(db.Integer, db.Sequence('wb_session_model_id_seq'), primary_key=True)
+    type = db.Column(db.String(50))
     session_id = db.Column(db.String(2*session_id_byte_length), unique=True)
     secret = db.Column(db.String(2*secret_byte_length))
-    user_id = db.Column(db.Integer, db.ForeignKey('user_model.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('wb_user_model.id'), nullable=False)
     created = db.Column(db.DateTime)
     accessed = db.Column(db.DateTime)
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'wb_session_model',
+        'polymorphic_on': type
+    }
 
     def __init__(self, user_id):
         self.session_id = binascii.hexlify(os.urandom(self.session_id_byte_length))

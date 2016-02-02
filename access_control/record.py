@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 
 from sqlalchemy import and_, or_, true, false, text
 
-from ..models.user_model import UserModel
+from ..models.user_model import WBUserModel
 from ..models.record_acl_model import RecordACLModel
 
 class RecordAccessControl(object):
@@ -140,7 +140,7 @@ class HasRole(RecordAccessControl):
         if user is None:
             roles = set(['__anonymous'])
         else:
-            user = UserModel.query.get(user)
+            user = WBUserModel.query.get(user)
             roles = set([r.rolename for r in user.roles])
 
         if roles & self.roles:
@@ -163,7 +163,7 @@ class InRecordACL(RecordAccessControl):
         if user is None:
             user_roles = set(['__anonymous'])
         else:
-            user = UserModel.query.get(user)
+            user = WBUserModel.query.get(user)
             user_roles = set([r.rolename for r in user.roles])
 
         return {
