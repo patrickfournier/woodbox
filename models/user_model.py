@@ -8,7 +8,7 @@ from flask import current_app
 from ..db import db
 from ..utils.pbkdf2_hmac import pbkdf2_hmac
 
-user_roles = db.Table('user_roles',
+user_roles = db.Table('wb_user_roles_association',
                       db.Column('user_id', db.Integer, db.ForeignKey('wb_user_model.id')),
                       db.Column('role_id', db.Integer, db.ForeignKey('wb_role_model.id'))
 )
