@@ -10,6 +10,10 @@
    :target: https://codeclimate.com/github/patrickfournier/woodbox
    :alt: Issue Count
 
+.. image:: https://codecov.io/github/patrickfournier/woodbox/coverage.svg?branch=master
+   :target: https://codecov.io/github/patrickfournier/woodbox?branch=master
+   :alt: Coverage
+
 =======
 Woodbox
 =======
