@@ -8,8 +8,8 @@ from datetime import datetime
 
 import pytz
 
-from utils.time import strptime_iso8601
-from utils.pbkdf2_hmac import pbkdf2_hmac
+from woodbox.utils.time import strptime_iso8601
+from woodbox.utils.pbkdf2_hmac import pbkdf2_hmac
 
 class TestUtils(unittest.TestCase):
     def test_strptime_iso8601(self):
