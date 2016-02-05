@@ -14,6 +14,7 @@ engines:
     enabled: true
     exclude_fingerprints:
     - 7bf39e90b7b6c666bc92955cbfd27432
+    - 5f9aaf4e3539a3d5f7012c221397ceac
 ratings:
   paths:
   - "**.inc"
@@ -24,3 +25,5 @@ ratings:
   - "**.py"
   - "**.rb"
 exclude_paths: []
+- "models/proxy_model.py"
+- "utils/pbkdf2_hmac.py"

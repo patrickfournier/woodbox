@@ -14,17 +14,18 @@ class RecordAccessControl(object):
     def __init__(self, *args, **kwargs):
         pass
 
-    def _alter_query(self, query, alter):
+    @staticmethod
+    def _alter_query(query, alter):
         for j in alter['outerjoin']:
             query = query.outerjoin(j['table'], j['on'])
         return query.filter(alter['filter'])
 
     def alter_query(self, op, query, user, item_type, model_class):
-        alter = self._get_alteration(op, user, item_type, model_class)
+        alter = self.get_alteration(op, user, item_type, model_class)
         return self._alter_query(query, alter)
 
     @abstractmethod
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         return {'outerjoin': [], 'filter': true()}
 
 
@@ -34,11 +35,11 @@ class And(RecordAccessControl):
             self.operands = args
         super(And, self).__init__(*args, **kwargs);
 
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         outerjoins = []
         filters = []
         for ac in self.operands:
-            alter = ac._get_alteration(op, user, item_type, model_class)
+            alter = ac.get_alteration(op, user, item_type, model_class)
             outerjoins += alter['outerjoin']
             filters.append(alter['filter'])
         return {'outerjoin': outerjoins, 'filter': and_(*filters)}
@@ -50,11 +51,11 @@ class Or(RecordAccessControl):
             self.operands = args
         super(Or, self).__init__(*args, **kwargs);
 
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         outerjoins = []
         filters = []
         for ac in self.operands:
-            alter = ac._get_alteration(op, user, item_type, model_class)
+            alter = ac.get_alteration(op, user, item_type, model_class)
             outerjoins += alter['outerjoin']
             filters.append(alter['filter'])
         return {'outerjoin': outerjoins, 'filter': or_(*filters)}
@@ -64,7 +65,7 @@ class IsOwner(RecordAccessControl):
     def __init__(self, owner_id_column="owner_id"):
         self.owner_id_column = owner_id_column
 
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         if user is None:
             return {'outerjoin': [], 'filter': false()}
         else:
@@ -72,7 +73,7 @@ class IsOwner(RecordAccessControl):
 
 
 class IsUser1(RecordAccessControl):
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         if user == 1:
             return {'outerjoin': [], 'filter': true()}
         else:
@@ -85,7 +86,7 @@ class HasRole(RecordAccessControl):
         self.roles = set(roles)
         super(HasRole, self).__init__(*args, **kwargs)
 
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         if user is None:
             roles = (WBRoleModel.anonymous_role_name,)
         else:
@@ -99,7 +100,7 @@ class HasRole(RecordAccessControl):
 
 
 class InRecordACL(RecordAccessControl):
-    def _get_alteration(self, op, user, item_type, model_class):
+    def get_alteration(self, op, user, item_type, model_class):
         if user is None:
             anonymous_role_id = WBRoleModel.get_anonymous_role_id()
             user_roles = (anonymous_role_id,)
