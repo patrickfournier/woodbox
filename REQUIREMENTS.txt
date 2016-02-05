@@ -16,6 +16,7 @@ marshmallow==2.2.1
 marshmallow-jsonapi==0.3.0
 miracle-acl==0.0.4-1
 nodeenv==0.13.6
+nose2==0.5.0
 python-dateutil==2.4.2
 pytz==2015.7
 six==1.10.0

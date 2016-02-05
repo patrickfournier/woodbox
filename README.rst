@@ -1,3 +1,11 @@
+.. image:: https://codeclimate.com/github/patrickfournier/woodbox/badges/gpa.svg
+   :target: https://codeclimate.com/github/patrickfournier/woodbox
+   :alt: Code Climate
+
+.. image:: https://codeclimate.com/github/patrickfournier/woodbox/badges/issue_count.svg
+   :target: https://codeclimate.com/github/patrickfournier/woodbox
+   :alt: Issue Count
+
 =======
 Woodbox
 =======
