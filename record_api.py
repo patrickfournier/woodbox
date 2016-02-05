@@ -39,10 +39,10 @@ class RecordAPI(Resource):
         try:
             query = self.model_class.query
             if self.access_control is not None:
-                query = self.access_control.alter_query_for_read(query,
-                                                                 g.user,
-                                                                 self.resource_name,
-                                                                 self.model_class)
+                query = self.access_control.alter_query('read', query,
+                                                        g.user,
+                                                        self.resource_name,
+                                                        self.model_class)
             item = query.filter_by(id=item_id).first()
         except IntegrityError:
             abort(404, message="{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id))
@@ -55,10 +55,10 @@ class RecordAPI(Resource):
     def delete(self, item_id):
         query = self.model_class.query
         if self.access_control is not None:
-            query = self.access_control.alter_query_for_delete(query,
-                                                               g.user,
-                                                               self.resource_name,
-                                                               self.model_class)
+            query = self.access_control.alter_query('delete', query,
+                                                    g.user,
+                                                    self.resource_name,
+                                                    self.model_class)
         count = query.filter_by(id=item_id).delete()
         if count > 0:
             db.session.commit()
@@ -69,7 +69,7 @@ class RecordAPI(Resource):
         else:
             abort(404, message="{0} {1} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id))
 
-    def patch(self, item_id):
+    def _extract_data_from_request(self):
         schema = self.schema_class()
         if request.mimetype == 'application/vnd.api+json':
             input_data = request.get_json(force=True) or {}
@@ -77,18 +77,21 @@ class RecordAPI(Resource):
             return '', 415, {'Accept-Patch': 'application/vnd.api+json'}
 
         try:
-            data, errors = schema.load(input_data)
+            data, _ = schema.load(input_data)
         except ValidationError as err:
             return {'message': err.message}, 415
         except Exception as err:
             return {'message': err.message}, 422
+        return data
 
+    def patch(self, item_id):
+        data = self._extract_data_from_request()
         query = self.model_class.query
         if self.access_control is not None:
-            query = self.access_control.alter_query_for_update(query,
-                                                               g.user,
-                                                               self.resource_name,
-                                                               self.model_class)
+            query = self.access_control.alter_query('update', query,
+                                                    g.user,
+                                                    self.resource_name,
+                                                    self.model_class)
         item = query.filter_by(id=item_id).first()
         if not item:
             # According to RFC5789, we may create the ressource, but we do not.
@@ -128,26 +131,15 @@ class RecordListAPI(Resource):
     def get(self):
         query = self.model_class.query
         if self.access_control is not None:
-            query = self.access_control.alter_query_for_read(query,
-                                                             g.user,
-                                                             self.resource_name,
-                                                             self.model_class)
+            query = self.access_control.alter_query('read', query,
+                                                    g.user,
+                                                    self.resource_name,
+                                                    self.model_class)
         items = query.all()
         return self.schema_class().dump(items, many=True).data
 
     def post(self):
-        schema = self.schema_class()
-        if request.mimetype == 'application/vnd.api+json':
-            input_data = request.get_json(force=True) or {}
-        else:
-            return '', 415, {'Accept-Patch': 'application/vnd.api+json'}
-        try:
-            data, errors = schema.load(input_data)
-        except ValidationError as err:
-            return {'message': err.message}, 415
-        except Exception as err:
-            return {'message': err.message}, 422
-
+        data = self._extract_data_from_request()
         new_item = self.model_class(**data)
         db.session.add(new_item)
         db.session.commit()

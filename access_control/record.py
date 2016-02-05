@@ -11,69 +11,34 @@ from ..models.record_acl_model import RecordACLModel
 class RecordAccessControl(object):
     __metaclass__ = ABCMeta
 
-    def alter_query_for_read(self, query, user, item_type, model_class):
-        alter = self.read_alter(user, item_type, model_class)
+    def __init__(self, *args, **kwargs):
+        pass
 
+    def _alter_query(self, query, alter):
         for j in alter['outerjoin']:
             query = query.outerjoin(j['table'], j['on'])
-
         return query.filter(alter['filter'])
 
-    def alter_query_for_update(self, query, user, item_type, model_class):
-        alter = self.update_alter(user, item_type, model_class)
-
-        for j in alter['outerjoin']:
-            query = query.outerjoin(j['table'], j['on'])
-
-        return query.filter(alter['filter'])
-
-    def alter_query_for_delete(self, query, user, item_type, model_class):
-        alter = self.delete_alter(user, item_type, model_class)
-
-        for j in alter['outerjoin']:
-            query = query.outerjoin(j['table'], j['on'])
-
-        return query.filter(alter['filter'])
+    def alter_query(self, op, query, user, item_type, model_class):
+        alter = self._get_alteration(op, user, item_type, model_class)
+        return self._alter_query(query, alter)
 
     @abstractmethod
-    def read_alter(self, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         return {'outerjoin': [], 'filter': true()}
-
-    def update_alter(self, user, item_type, model_class):
-        return self.read(user, item_type, model_class)
-
-    def delete_alter(self, user, item_type, model_class):
-        return self.read(user, item_type, model_class)
 
 
 class And(RecordAccessControl):
     def __init__(self, *args, **kwargs):
         for c in args:
             self.operands = args
+        super(And, self).__init__(*args, **kwargs);
 
-    def read_alter(self, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         outerjoins = []
         filters = []
         for ac in self.operands:
-            alter = ac.read_alter(user, item_type, model_class)
-            outerjoins += alter['outerjoin']
-            filters.append(alter['filter'])
-        return {'outerjoin': outerjoins, 'filter': and_(*filters)}
-
-    def update_alter(self, user, item_type, model_class):
-        outerjoins = []
-        filters = []
-        for ac in self.operands:
-            alter = ac.update_alter(user, item_type, model_class)
-            outerjoins += alter['outerjoin']
-            filters.append(alter['filter'])
-        return {'outerjoin': outerjoins, 'filter': and_(*filters)}
-
-    def delete_alter(self, user, item_type, model_class):
-        outerjoins = []
-        filters = []
-        for ac in self.operands:
-            alter = ac.delete_alter(user, item_type, model_class)
+            alter = ac._get_alteration(op, user, item_type, model_class)
             outerjoins += alter['outerjoin']
             filters.append(alter['filter'])
         return {'outerjoin': outerjoins, 'filter': and_(*filters)}
@@ -83,30 +48,13 @@ class Or(RecordAccessControl):
     def __init__(self, *args, **kwargs):
         for c in args:
             self.operands = args
+        super(Or, self).__init__(*args, **kwargs);
 
-    def read_alter(self, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         outerjoins = []
         filters = []
         for ac in self.operands:
-            alter = ac.read_alter(user, item_type, model_class)
-            outerjoins += alter['outerjoin']
-            filters.append(alter['filter'])
-        return {'outerjoin': outerjoins, 'filter': or_(*filters)}
-
-    def update_alter(self, user, item_type, model_class):
-        outerjoins = []
-        filters = []
-        for ac in self.operands:
-            alter = ac.update_alter(user, item_type, model_class)
-            outerjoins += alter['outerjoin']
-            filters.append(alter['filter'])
-        return {'outerjoin': outerjoins, 'filter': or_(*filters)}
-
-    def delete_alter(self, user, item_type, model_class):
-        outerjoins = []
-        filters = []
-        for ac in self.operands:
-            alter = ac.delete_alter(user, item_type, model_class)
+            alter = ac._get_alteration(op, user, item_type, model_class)
             outerjoins += alter['outerjoin']
             filters.append(alter['filter'])
         return {'outerjoin': outerjoins, 'filter': or_(*filters)}
@@ -116,7 +64,7 @@ class IsOwner(RecordAccessControl):
     def __init__(self, owner_id_column="owner_id"):
         self.owner_id_column = owner_id_column
 
-    def read_alter(self, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         if user is None:
             return {'outerjoin': [], 'filter': false()}
         else:
@@ -124,7 +72,7 @@ class IsOwner(RecordAccessControl):
 
 
 class IsUser1(RecordAccessControl):
-    def read_alter(self, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         if user == 1:
             return {'outerjoin': [], 'filter': true()}
         else:
@@ -132,13 +80,14 @@ class IsUser1(RecordAccessControl):
 
 
 class HasRole(RecordAccessControl):
-    def __init__(self, roles):
+    def __init__(self, roles, *args, **kwargs):
         assert hasattr(roles, '__iter__')
         self.roles = set(roles)
+        super(HasRole, self).__init__(*args, **kwargs)
 
-    def read_alter(self, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         if user is None:
-            roles = {WBRoleModel.anonymous_role_name}
+            roles = (WBRoleModel.anonymous_role_name,)
         else:
             user = WBUserModel.query.get(user)
             roles = {r.rolename for r in user.roles}
@@ -150,22 +99,13 @@ class HasRole(RecordAccessControl):
 
 
 class InRecordACL(RecordAccessControl):
-    def read_alter(self, user, item_type, model_class):
-        return self._alter('read', user, item_type, model_class)
-
-    def update_alter(self, user, item_type, model_class):
-        return self._alter('update', user, item_type, model_class)
-
-    def delete_alter(self, user, item_type, model_class):
-        return self._alter('delete', user, item_type, model_class)
-
-    def _alter(self, permission, user, item_type, model_class):
+    def _get_alteration(self, op, user, item_type, model_class):
         if user is None:
             anonymous_role_id = WBRoleModel.get_anonymous_role_id()
-            user_roles = set([anonymous_role_id])
+            user_roles = (anonymous_role_id,)
         else:
             user = WBUserModel.query.get(user)
-            user_roles = set([r.id for r in user.roles])
+            user_roles = {r.id for r in user.roles}
 
         return {
             'outerjoin': [{
@@ -174,5 +114,5 @@ class InRecordACL(RecordAccessControl):
             }],
             'filter' : and_(RecordACLModel.user_role_id.in_(user_roles),
                             RecordACLModel.record_type == item_type,
-                            RecordACLModel.permission == permission)
+                            RecordACLModel.permission == op)
         }
