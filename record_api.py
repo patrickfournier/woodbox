@@ -45,10 +45,10 @@ class RecordAPI(Resource):
                                                                  self.model_class)
             item = query.filter_by(id=item_id).first()
         except IntegrityError:
-            abort(404, message="{} {} doesn't exist.".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id))
 
         if not item:
-            abort(404, message="{} {} doesn't exist or you do not have permission to view it.".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{0} {1} doesn't exist or you do not have permission to view it.".format(self.schema_class.Meta.type_, item_id))
         else:
             return self.schema_class().dump(item).data
 
@@ -67,7 +67,7 @@ class RecordAPI(Resource):
                                                    'id': item_id})
             return '', 204
         else:
-            abort(404, message="{} {} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{0} {1} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id))
 
     def patch(self, item_id):
         schema = self.schema_class()
@@ -92,7 +92,7 @@ class RecordAPI(Resource):
         item = query.filter_by(id=item_id).first()
         if not item:
             # According to RFC5789, we may create the ressource, but we do not.
-            abort(404, message="{} {} doesn't exist or you do not have permission to modify it.".format(self.schema_class.Meta.type_, item_id))
+            abort(404, message="{0} {1} doesn't exist or you do not have permission to modify it.".format(self.schema_class.Meta.type_, item_id))
 
         for key in data:
             setattr(item, key, data[key])
