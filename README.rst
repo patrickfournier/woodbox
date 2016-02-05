@@ -1,5 +1,5 @@
 .. image:: https://travis-ci.org/patrickfournier/woodbox.svg?branch=master
-    :target: https://travis-ci.org/patrickfournier/woodbox
+   :target: https://travis-ci.org/patrickfournier/woodbox
    :alt: Travis CI
 
 .. image:: https://codeclimate.com/github/patrickfournier/woodbox/badges/gpa.svg
