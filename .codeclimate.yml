@@ -24,6 +24,6 @@ ratings:
   - "**.php"
   - "**.py"
   - "**.rb"
-exclude_paths: []
+exclude_paths:
 - "models/proxy_model.py"
 - "utils/pbkdf2_hmac.py"
