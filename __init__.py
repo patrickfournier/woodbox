@@ -27,8 +27,7 @@ def create_app(config):
     return app
 
 def init_db():
-    db.drop_all()
-    db.create_all()
+    db.initialize()
 
 def create_server(app, port, debug=False):
     app.debug = debug

@@ -15,8 +15,7 @@ from woodbox.models.tests.model_test_case import ModelTestCase
 class TestSession(ModelTestCase):
     def test_creation(self):
         with self.app.test_request_context('/'):
-            db.drop_all()
-            db.create_all()
+            db.initialize()
             user = WBUserModel(username='alice', password='abc')
             db.session.add(user)
             db.session.commit()
@@ -34,14 +33,12 @@ class TestSession(ModelTestCase):
 
     def test_creation_invalid_user_id(self):
         with self.app.test_request_context('/'):
-            db.drop_all()
-            db.create_all()
+            db.initialize()
             self.assertRaises(ArgumentError, WBSessionModel, 42)
 
     def test_touch(self):
         with self.app.test_request_context('/'):
-            db.drop_all()
-            db.create_all()
+            db.initialize()
             user = WBUserModel(username='alice', password='abc')
             db.session.add(user)
             db.session.commit()

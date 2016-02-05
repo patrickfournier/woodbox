@@ -21,11 +21,12 @@ class WBSessionModel(db.Model):
 
     id = db.Column(db.Integer, db.Sequence('wb_session_model_id_seq'), primary_key=True)
     type = db.Column(db.String(50))
-    session_id = db.Column(db.String(2*session_id_byte_length), unique=True)
-    secret = db.Column(db.String(2*secret_byte_length))
+    session_id = db.Column(db.String(2*session_id_byte_length),
+                           index=True, nullable=False, unique=True)
+    secret = db.Column(db.String(2*secret_byte_length), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('wb_user_model.id'), nullable=False)
-    created = db.Column(db.DateTime)
-    accessed = db.Column(db.DateTime)
+    created = db.Column(db.DateTime, nullable=False)
+    accessed = db.Column(db.DateTime, nullable=False)
 
     __mapper_args__ = {
         'polymorphic_identity': 'wb_session_model',

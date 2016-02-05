@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 
 from sqlalchemy import and_, or_, true, false, text
 
-from ..models.user_model import WBUserModel
+from ..models.user_model import WBUserModel, WBRoleModel
 from ..models.record_acl_model import RecordACLModel
 
 class RecordAccessControl(object):
@@ -13,7 +13,7 @@ class RecordAccessControl(object):
 
     def alter_query_for_read(self, query, user, item_type, model_class):
         alter = self.read_alter(user, item_type, model_class)
-        print (alter)
+
         for j in alter['outerjoin']:
             query = query.outerjoin(j['table'], j['on'])
 
@@ -138,7 +138,7 @@ class HasRole(RecordAccessControl):
 
     def read_alter(self, user, item_type, model_class):
         if user is None:
-            roles = set(['__anonymous'])
+            roles = set([WBRoleModel.anonymous_role_name])
         else:
             user = WBUserModel.query.get(user)
             roles = set([r.rolename for r in user.roles])
@@ -161,17 +161,18 @@ class InRecordACL(RecordAccessControl):
 
     def _alter(self, permission, user, item_type, model_class):
         if user is None:
-            user_roles = set(['__anonymous'])
+            anonymous_role_id = WBRoleModel.get_anonymous_role_id()
+            user_roles = set([anonymous_role_id])
         else:
             user = WBUserModel.query.get(user)
-            user_roles = set([r.rolename for r in user.roles])
+            user_roles = set([r.id for r in user.roles])
 
         return {
             'outerjoin': [{
                 'table': RecordACLModel,
                 'on': RecordACLModel.record_id == model_class.id
             }],
-            'filter' : and_(RecordACLModel.user_role.in_(user_roles),
+            'filter' : and_(RecordACLModel.user_role_id.in_(user_roles),
                             RecordACLModel.record_type == item_type,
                             RecordACLModel.permission == permission)
         }

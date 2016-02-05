@@ -8,7 +8,7 @@ import miracle
 from flask import g
 from flask_restful import abort
 
-from ..models.user_model import WBUserModel
+from ..models.user_model import WBUserModel, WBRoleModel
 
 class Acl(miracle.Acl):
     def authorize(self, f):
@@ -21,7 +21,7 @@ class Acl(miracle.Acl):
                                   'delete': 'delete'}
 
             if g.user is None:
-                roles = ['__anonymous']
+                roles = [WBRoleModel.anonymous_role_name]
             else:
                 user = WBUserModel.query.get(g.user)
                 roles = [r.rolename for r in user.roles]

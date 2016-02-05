@@ -12,8 +12,8 @@ class TestUser(ModelTestCase):
     def test_unique_name(self):
         """Test that we cannot add two users with the same username."""
         with self.app.test_request_context('/'):
-            db.drop_all()
-            db.create_all()
+            db.initialize()
+
             db.session.add(WBUserModel(username='alice', password='abc'))
             db.session.commit()
 
@@ -28,8 +28,7 @@ class TestUser(ModelTestCase):
     def test_field_limits(self):
         """Test that length limit on username is enforced."""
         with self.app.test_request_context('/'):
-            db.drop_all()
-            db.create_all()
+            db.initialize()
 
             long_username = self.str_n(51)
             self.assertEqual(len(long_username), 51)
@@ -54,8 +53,7 @@ class TestUser(ModelTestCase):
             hashed_password = WBUserModel.hash_password(password)
             self.assertEqual(len(hashed_password), 64)
 
-            db.drop_all()
-            db.create_all()
+            db.initialize()
             user = WBUserModel(username='alice', password=password)
             db.session.add(user)
             db.session.commit()
@@ -64,11 +62,19 @@ class TestUser(ModelTestCase):
             self.assertEqual(read_user.hashed_password, hashed_password)
 
 
+    def test_anonymous_role(self):
+        """Verify that the anonymous role is created."""
+        with self.app.test_request_context('/'):
+            db.initialize()
+            role = WBRoleModel.query.filter_by(rolename=WBRoleModel.anonymous_role_name).first()
+            self.assertIsNotNone(role)
+
+
     def test_roles(self):
         """Test user role assignment."""
         with self.app.test_request_context('/'):
-            db.drop_all()
-            db.create_all()
+            db.initialize()
+
             user = WBUserModel(username='alice', password='abc')
             db.session.add(user)
 
