@@ -138,10 +138,10 @@ class HasRole(RecordAccessControl):
 
     def read_alter(self, user, item_type, model_class):
         if user is None:
-            roles = set([WBRoleModel.anonymous_role_name])
+            roles = {WBRoleModel.anonymous_role_name}
         else:
             user = WBUserModel.query.get(user)
-            roles = set([r.rolename for r in user.roles])
+            roles = {r.rolename for r in user.roles}
 
         if roles & self.roles:
             return {'outerjoin': [], 'filter': true()}

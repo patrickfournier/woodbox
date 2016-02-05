@@ -15,13 +15,13 @@ class Database(SQLAlchemy):
         db.drop_all()
         db.create_all()
         for i in self.initializers:
-            i.do_init()
+            i().do_init()
 
 db = Database()
 
 class DatabaseInitializerMetaclass(type):
     def __init__(cls, name, bases, dct):
-        db.register_initializer(cls())
+        db.register_initializer(cls)
 
 class DatabaseInitializer(object):
     __metaclass__ = DatabaseInitializerMetaclass

@@ -37,7 +37,8 @@ except ImportError:
 class HMACAuthenticator(object):
     """Analyze a request and find from which user it originates."""
 
-    def parse_authorization_header(self, header):
+    @staticmethod
+    def parse_authorization_header(header):
         method, _, args = header.partition(' ')
         method = method.strip()
         args = args.split(',')
@@ -47,7 +48,8 @@ class HMACAuthenticator(object):
             args_dict[name.strip().lower()] = value.strip()
         return (method, args_dict)
 
-    def verify(self, algo, auth, headers):
+    @staticmethod
+    def verify(algo, auth, headers):
         """
         Expected headers:
 
@@ -90,7 +92,7 @@ class HMACAuthenticator(object):
 
         # Check that all signed headers are part of the request.
         missing_headers = set(signed_headers) - set(six.iterkeys(headers))
-        if len(missing_headers) > 0:
+        if missing_headers:
             g.user = None
             g.user_reason = 'Missing headers: ' + ', '.join(missing_headers)
             return False

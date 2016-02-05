@@ -39,7 +39,8 @@ class WBRoleModel(db.Model):
 
 
 class WBRoleModelInitializer(DatabaseInitializer):
-    def do_init(self):
+    @staticmethod
+    def do_init():
         anonymous_role = WBRoleModel(rolename=WBRoleModel.anonymous_role_name)
         db.session.add(anonymous_role)
         db.session.commit()

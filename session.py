@@ -35,9 +35,8 @@ def authenticate():
 def validate_session():
     session_id = request.form['session_id']
     session = WBSessionModel.query.filter_by(session_id=session_id).first()
-    if session:
-        if session.touch():
-            return jsonify(err=0)
+    if session and session.touch():
+        return jsonify(err=0)
 
     return jsonify(err=3, message="Invalid session.")
 

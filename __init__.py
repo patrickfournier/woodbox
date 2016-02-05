@@ -38,27 +38,27 @@ def create_server(app, port, debug=False):
     ##
     # create a Twisted Web resource for our WebSocket server
     ##
-    wsFactory = WebSocketServerFactory(u"ws://127.0.0.1:5000",
-                                       debug=debug,
-                                       debugCodePaths=debug)
-    wsFactory.protocol = NotificationService
-    wsResource = WebSocketResource(wsFactory)
+    ws_factory = WebSocketServerFactory(u"ws://127.0.0.1:5000",
+                                        debug=debug,
+                                        debugCodePaths=debug)
+    ws_factory.protocol = NotificationService
+    ws_resource = WebSocketResource(ws_factory)
 
     ##
     # create a Twisted Web WSGI resource for our Flask server
     ##
-    wsgiResource = WSGIResource(reactor, reactor.getThreadPool(), app)
+    wsgi_resource = WSGIResource(reactor, reactor.getThreadPool(), app)
 
     ##
     # create a root resource serving everything via WSGI/Flask, but
     # the path "/ws" served by our WebSocket stuff
     ##
-    rootResource = WSGIRootResource(wsgiResource, {'notification-service': wsResource})
+    root_resource = WSGIRootResource(wsgi_resource, {'notification-service': ws_resource})
 
     ##
     # create a Twisted Web Site and run everything
     ##
-    site = Site(rootResource)
+    site = Site(root_resource)
 
     reactor.listenTCP(port, site)
     reactor.run()
