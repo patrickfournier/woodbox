@@ -10,6 +10,10 @@
    :target: https://codeclimate.com/github/patrickfournier/woodbox
    :alt: Issue Count
 
+.. image:: https://www.quantifiedcode.com/api/v1/project/915dd5ca95aa445e807620ce6beceb87/badge.svg
+   :target: https://www.quantifiedcode.com/app/project/915dd5ca95aa445e807620ce6beceb87
+   :alt: Code issues
+
 .. image:: https://codecov.io/github/patrickfournier/woodbox/coverage.svg?branch=master
    :target: https://codecov.io/github/patrickfournier/woodbox?branch=master
    :alt: Coverage
