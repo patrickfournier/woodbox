@@ -9,10 +9,10 @@ from sqlalchemy.exc import ArgumentError, IntegrityError
 from woodbox.db import db
 from woodbox.models.session_model import WBSessionModel
 from woodbox.models.user_model import WBUserModel
-from woodbox.models.tests.model_test_case import ModelTestCase
+from woodbox.tests.flask_test_case import FlaskTestCase
 
 
-class TestSession(ModelTestCase):
+class TestSession(FlaskTestCase):
     def test_creation(self):
         with self.app.test_request_context('/'):
             db.initialize()

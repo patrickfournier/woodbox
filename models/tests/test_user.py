@@ -5,10 +5,10 @@ from sqlalchemy.exc import IntegrityError
 
 from woodbox.db import db
 from woodbox.models.user_model import WBUserModel, WBRoleModel
-from woodbox.models.tests.model_test_case import ModelTestCase
+from woodbox.tests.flask_test_case import FlaskTestCase
 
 
-class TestUser(ModelTestCase):
+class TestUser(FlaskTestCase):
     def test_unique_name(self):
         """Test that we cannot add two users with the same username."""
         with self.app.test_request_context('/'):

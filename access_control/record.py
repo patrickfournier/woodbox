@@ -9,6 +9,12 @@ from ..models.user_model import WBUserModel, WBRoleModel
 from ..models.record_acl_model import RecordACLModel
 
 class RecordAccessControl(object):
+    """Base record access control class.
+
+    This is an abstract class. Use one of the derivative, or derivate
+    your own class.
+
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
@@ -30,6 +36,7 @@ class RecordAccessControl(object):
 
 
 class And(RecordAccessControl):
+    """Alter a query by and-ing all access control conditions passed in the constructor."""
     def __init__(self, *args, **kwargs):
         for c in args:
             self.operands = args
@@ -46,6 +53,7 @@ class And(RecordAccessControl):
 
 
 class Or(RecordAccessControl):
+    """Alter a query by or-ing all access control conditions passed in the constructor."""
     def __init__(self, *args, **kwargs):
         for c in args:
             self.operands = args
@@ -62,8 +70,10 @@ class Or(RecordAccessControl):
 
 
 class IsOwner(RecordAccessControl):
-    def __init__(self, owner_id_column="owner_id"):
+    """Alter a query to only return records owned by `user`."""
+    def __init__(self, owner_id_column="owner_id", *args, **kwargs):
         self.owner_id_column = owner_id_column
+        super(IsOwner, self).__init__(*args, **kwargs)
 
     def get_alteration(self, op, user, item_type, model_class):
         if user is None:
@@ -73,6 +83,11 @@ class IsOwner(RecordAccessControl):
 
 
 class IsUser1(RecordAccessControl):
+    """Alter a query to return all records if `user` is 1.
+
+    This gives access to all records to user 1.
+
+    """
     def get_alteration(self, op, user, item_type, model_class):
         if user == 1:
             return {'outerjoin': [], 'filter': true()}
@@ -81,6 +96,7 @@ class IsUser1(RecordAccessControl):
 
 
 class HasRole(RecordAccessControl):
+    """Alter a query to return all records if `user` has one of the roles in `self.roles`."""
     def __init__(self, roles, *args, **kwargs):
         assert hasattr(roles, '__iter__')
         self.roles = set(roles)
@@ -88,7 +104,7 @@ class HasRole(RecordAccessControl):
 
     def get_alteration(self, op, user, item_type, model_class):
         if user is None:
-            roles = (WBRoleModel.anonymous_role_name,)
+            roles = {WBRoleModel.anonymous_role_name}
         else:
             user = WBUserModel.query.get(user)
             roles = {r.rolename for r in user.roles}
@@ -100,10 +116,11 @@ class HasRole(RecordAccessControl):
 
 
 class InRecordACL(RecordAccessControl):
+    """Alter a query to return records having a RecordACLModel entry that matches the specified parameters."""
     def get_alteration(self, op, user, item_type, model_class):
         if user is None:
             anonymous_role_id = WBRoleModel.get_anonymous_role_id()
-            user_roles = (anonymous_role_id,)
+            user_roles = {anonymous_role_id}
         else:
             user = WBUserModel.query.get(user)
             user_roles = {r.id for r in user.roles}

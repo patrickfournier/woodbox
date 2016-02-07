@@ -16,3 +16,17 @@ class RecordACLModel(db.Model):
                                           'user_role_id',
                                           'permission',
                                           name='_unique_acl'),)
+
+
+def make_record_acl(record_types, record_ids, user_role_ids, permissions):
+    """Helper function to build a list of RecordACLModels."""
+    acl = []
+    for r in record_types:
+        for i in record_ids:
+            for u in user_role_ids:
+                for p in permissions:
+                    acl.append(RecordACLModel(record_type=r,
+                                              record_id=i,
+                                              user_role_id=u,
+                                              permission=p))
+    return acl

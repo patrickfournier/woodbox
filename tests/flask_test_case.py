@@ -12,7 +12,7 @@ from sqlalchemy.engine.url import make_url
 from woodbox.db import db
 
 
-class ModelTestCase(unittest.TestCase):
+class FlaskTestCase(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
         # FIXME: find a way to configure the db to test other backends (like MySQL).
