@@ -66,6 +66,8 @@ class RecordAccessTestCase(FlaskTestCase):
             self.d4 = self.d4.id
 
             # Add some access control records
+            anon = WBRoleModel.get_anonymous_role_id()
+
             db.session.add_all(make_record_acl(record_types=['My'],
                                                record_ids=[self.d1, self.d2, self.d3, self.d4],
                                                user_role_ids=[self.r1],
@@ -88,7 +90,7 @@ class RecordAccessTestCase(FlaskTestCase):
 
             db.session.add_all(make_record_acl(record_types=['My'],
                                                record_ids=[self.d3, self.d4],
-                                               user_role_ids=[WBRoleModel.get_anonymous_role_id()],
+                                               user_role_ids=[anon],
                                                permissions=['read']))
             db.session.commit()
 

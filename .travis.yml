@@ -1,12 +1,25 @@
 language: python
+
 python:
   - "2.7"
-# command to install dependencies
-install: "pip install -r REQUIREMENTS.txt"
-# command to run tests
-script: nose2 -t .. --with-coverage
+
+services:
+  - mysql
+
+env:
+  - DB=sqlite
+  - DB=mysql WOODBOX_DATABASE_URI="mysql+mysqldb://travis@localhost/woodbox_test"
 
 before_install:
   - pip install codecov
+
+install: "pip install -r REQUIREMENTS.txt"
+
+before_script:
+  - sh -c "if [ $DB = mysql ]; then mysql -e 'create database IF NOT EXISTS woodbox_test'; fi"
+
+script:
+  - nose2 -t .. --with-coverage
+
 after_success:
   - codecov

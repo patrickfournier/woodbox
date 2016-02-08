@@ -44,7 +44,14 @@ class TestUser(FlaskTestCase):
                                   record_id=1, user_role_id=role2.id,
                                   permission='transmogrify')
             db.session.add(ace7)
-            self.assertRaises(IntegrityError, db.session.commit)
+            if db.engine.name == 'sqlite':
+                self.assertRaises(IntegrityError, db.session.commit)
+                db.session.rollback()
+            elif db.engine.name == 'mysql':
+                self.assertRaises(Warning, db.session.commit)
+                db.session.rollback()
+            else:
+                db.session.commit
 
     def test_duplicate(self):
         with self.app.test_request_context('/'):
@@ -62,3 +69,4 @@ class TestUser(FlaskTestCase):
                                   permission='read')
             db.session.add_all([ace1, ace2])
             self.assertRaises(IntegrityError, db.session.commit)
+            db.session.rollback()

@@ -35,6 +35,7 @@ class TestSession(FlaskTestCase):
         with self.app.test_request_context('/'):
             db.initialize()
             self.assertRaises(ArgumentError, WBSessionModel, 42)
+            db.session.rollback()
 
     def test_touch(self):
         with self.app.test_request_context('/'):

@@ -35,14 +35,18 @@ class TestUser(FlaskTestCase):
 
             user = WBUserModel(username=long_username, password='abc')
             db.session.add(user)
-            db.session.commit()
-
-            users = WBUserModel.query.order_by(WBUserModel.id).all()
-            if db.engine.driver != 'pysqlite':
-                self.assertEqual(users[0].username, long_username[:50])
+            if db.engine.name == 'mysql':
+                self.assertRaises(Warning, db.session.commit)
+                db.session.rollback()
             else:
+                db.session.commit()
+
+            user = WBUserModel.query.order_by(WBUserModel.id).first()
+            if db.engine.name == 'sqlite':
                 # sqlite ignore field length.
-                self.assertEqual(users[0].username, long_username)
+                self.assertEqual(user.username, long_username)
+            else:
+                self.assertIsNone(user)
 
     def test_store_hashed_password(self):
         """Test that the password is stored as a hash."""

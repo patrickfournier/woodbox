@@ -79,7 +79,8 @@ class IsOwner(RecordAccessControl):
         if user is None:
             return {'outerjoin': [], 'filter': false()}
         else:
-            return {'outerjoin': [], 'filter': text(self.owner_id_column + "==" + str(user))}
+            c = getattr(model_class, self.owner_id_column)
+            return {'outerjoin': [], 'filter': c == user}
 
 
 class IsUser1(RecordAccessControl):
