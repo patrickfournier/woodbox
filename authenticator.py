@@ -152,7 +152,7 @@ class HMACAuthenticator(object):
         computed_signature = hmac_new(signing_key, string_to_sign, sha256).hexdigest()
 
         # Compare our signature with the signature in the request.
-        if compare_digest(signature, computed_signature):
+        if compare_digest(signature.encode('ascii', 'ignore'), computed_signature.encode('ascii', 'ignore')):
             g.user = session.user_id
             g.user_reason = 'Authenticated'
             return True
