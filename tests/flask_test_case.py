@@ -7,8 +7,6 @@ import string
 import unittest
 import warnings
 
-import os
-
 from flask import Flask
 from sqlalchemy.engine.url import make_url
 
@@ -28,6 +26,7 @@ class FlaskTestCase(unittest.TestCase):
         db.init_app(self.app)
 
         if self.app.config['SQLALCHEMY_DATABASE_URI'][:5] == 'mysql':
+            # Make MySQL warnings raise exceptions.
             warnings.simplefilter('error')
 
     def tearDown(self):
