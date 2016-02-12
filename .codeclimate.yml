@@ -2,12 +2,18 @@
 engines:
   duplication:
     enabled: true
+    exclude_paths:
+      - access_control/tests/**/*
+      - models/tests/**/*
+      - tests/**/*
+      - utils_control/tests/**/*
     config:
       languages:
-      - ruby
-      - javascript
-      - python
-      - php
+        ruby:
+        javascript:
+        python:
+          mass_threshold: 50
+        php:
   fixme:
     enabled: true
   radon:
