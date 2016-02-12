@@ -2,7 +2,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import json
-import unittest
 
 from datetime import datetime, timedelta
 from time import sleep
@@ -10,9 +9,9 @@ from time import sleep
 from flask import request
 
 from woodbox.db import db
-from woodbox.session import authenticate, validate_session, invalidate_session, add_session_management_urls
 from woodbox.models.session_model import WBSessionModel
 from woodbox.models.user_model import WBUserModel
+from woodbox.session import authenticate, validate_session, invalidate_session, add_session_management_urls
 from woodbox.tests.flask_test_case import FlaskTestCase
 
 
@@ -25,18 +24,12 @@ class SessionTestCase(FlaskTestCase):
         with self.app.test_request_context('/'):
             db.initialize()
 
-            # Create some users
+            # Create a user
             self.u1 = WBUserModel(username='a', password='a', roles=[])
             db.session.add(self.u1)
-            self.u2 = WBUserModel(username='b', password='a', roles=[])
-            db.session.add(self.u2)
-            self.u3 = WBUserModel(username='c', password='a', roles=[])
-            db.session.add(self.u3)
             db.session.commit()
 
             self.u1 = self.u1.id
-            self.u2 = self.u2.id
-            self.u3 = self.u3.id
 
     def test_authenticate_success(self):
         with self.app.test_client() as c:
