@@ -11,25 +11,21 @@ from .models.user_model import WBUserModel
 def authenticate():
     try:
         name = request.form['username']
-        user = WBUserModel.query.filter_by(username=name).first()
-        if user:
-            password = request.form['password']
-            hashed_password = WBUserModel.hash_password(password)
-            if user.hashed_password == hashed_password:
-                session = WBSessionModel(user_id=user.id)
-                db.session.add(session)
-                db.session.commit()
-                response = jsonify(username=name, err=0,
-                                   session_id=session.session_id,
-                                   session_secret=session.secret)
-            else:
-                response = jsonify(err=1, message="Invalid credentials.")
-        else:
-            response = jsonify(err=1, message="Invalid credentials.")
+        password = request.form['password']
     except KeyError:
-        response = jsonify(err=2, message="Missing parameter.")
+        return jsonify(err=2, message="Missing parameter.")
 
-    return response
+    user = WBUserModel.query.filter_by(username=name).first()
+    hashed_password = WBUserModel.hash_password(password)
+    if user and user.hashed_password == hashed_password:
+        session = WBSessionModel(user_id=user.id)
+        db.session.add(session)
+        db.session.commit()
+        return jsonify(username=name, err=0,
+                       session_id=session.session_id,
+                       session_secret=session.secret)
+    else:
+        return jsonify(err=1, message="Invalid credentials.")
 
 
 def validate_session():
