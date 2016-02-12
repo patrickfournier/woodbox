@@ -78,7 +78,7 @@ class SessionTestCase(FlaskTestCase):
                 canonical_headers.append(h+':'+headers[h])
             canonical_headers = '\n'.join(canonical_headers).encode('utf-8')
             signed_headers = ';'.join(signed_headers)
-            canonical_request = '\n'.join(['GET', '/test', '',
+            canonical_request = '\n'.join(['GET', '/test', 'a=2&b=1',
                                            canonical_headers,
                                            signed_headers,
                                            payload_hash])
@@ -101,9 +101,61 @@ class SessionTestCase(FlaskTestCase):
                 'x-woodbox-content-sha256': payload_hash,
                 'x-woodbox-timestamp': now
             }
-            response = c.get('/test', headers=request_headers)
+            response = c.get('/test?b=1&a=2', headers=request_headers)
             self.assertEqual(g.user_reason, 'Authenticated')
             self.assertEqual(response.data, '1', g.user_reason)
+
+    def test_authenticator_unsorted_query_string(self):
+        with self.app.test_client() as c:
+            response = c.post('/authenticate', data={'username': 'a', 'password': 'a'})
+            self.assertEqual(response.headers['content-type'], 'application/json', response.data)
+            response = json.loads(response.data)
+            session_id = response['session_id']
+            secret = response['session_secret']
+
+            payload_hash = sha256('').hexdigest()
+            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+
+            headers = {
+                'content-type': '',
+                'host': 'localhost',
+                'x-woodbox-content-sha256': payload_hash,
+                'x-woodbox-timestamp': now
+            }
+
+            signed_headers = sorted(['content-type', 'host','x-woodbox-content-sha256','x-woodbox-timestamp'])
+
+            canonical_headers = []
+            for h in signed_headers:
+                canonical_headers.append(h+':'+headers[h])
+            canonical_headers = '\n'.join(canonical_headers).encode('utf-8')
+            signed_headers = ';'.join(signed_headers)
+            canonical_request = '\n'.join(['GET', '/test', 'b=1&a=2',
+                                           canonical_headers,
+                                           signed_headers,
+                                           payload_hash])
+
+            string_to_sign = '\n'.join(['WOODBOX-HMAC-SHA256', now, sha256(canonical_request).hexdigest()])
+            signing_key = secret.encode('utf-8')
+            signature = hmac_new(signing_key, string_to_sign, sha256).hexdigest()
+
+            auth = {
+                'Credential': session_id,
+                'SignedHeaders': signed_headers,
+                'Signature': signature
+            }
+            auth = [k+'='+v for k,v in auth.iteritems()]
+            auth = ','.join(auth)
+            auth_str = ' '.join(['Woodbox-HMAC-SHA256', auth]);
+
+            request_headers = {
+                'Authorization': auth_str,
+                'x-woodbox-content-sha256': payload_hash,
+                'x-woodbox-timestamp': now
+            }
+            response = c.get('/test?b=1&a=2', headers=request_headers)
+            self.assertEqual(g.user_reason, 'Signature do not match')
+            self.assertEqual(response.data, 'anonymous', g.user_reason)
 
     def test_authenticator_invalid_session(self):
         with self.app.test_client() as c:
