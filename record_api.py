@@ -9,6 +9,7 @@ from flask_restful import Resource, abort
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from .authenticator import HMACAuthenticator
 from .db import db
 from .push_service import NotificationService
 
@@ -69,23 +70,20 @@ class RecordAPI(Resource):
         else:
             abort(404, message="{0} {1} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id))
 
-    def _extract_data_from_request(self):
-        schema = self.schema_class()
-        if request.mimetype == 'application/vnd.api+json':
-            input_data = request.get_json(force=True) or {}
-        else:
+    def patch(self, item_id):
+        if request.mimetype != 'application/vnd.api+json':
             return '', 415, {'Accept-Patch': 'application/vnd.api+json'}
 
-        try:
-            data, _ = schema.load(input_data)
-        except ValidationError as err:
-            return {'message': err.message}, 415
-        except Exception as err:
-            return {'message': err.message}, 422
-        return data
+        input_data = request.get_json(force=True) or {}
+        schema = self.schema_class()
 
-    def patch(self, item_id):
-        data = self._extract_data_from_request()
+        try:
+            data, _ = schema.load(input_data, partial=True)
+        except ValidationError as err:
+            return {'message': err.args[0]}, 415
+        except Exception as err:
+            return {'message': err.args[0]}, 422
+
         query = self.model_class.query
         if self.access_control is not None:
             query = self.access_control.alter_query('update', query,
@@ -100,9 +98,11 @@ class RecordAPI(Resource):
         for key in data:
             setattr(item, key, data[key])
         db.session.commit()
+
         NotificationService.broadcast_message({'event': 'updated',
                                                'type': self.schema_class.Meta.type_,
                                                'id': item_id})
+
         return '', 204, {'Content-Location': url_for(self.scoped_endpoint(), item_id=item_id)}
 
 
@@ -139,25 +139,47 @@ class RecordListAPI(Resource):
         return self.schema_class().dump(items, many=True).data
 
     def post(self):
-        data = self._extract_data_from_request()
+        if request.mimetype != 'application/vnd.api+json':
+            return '', 415, {'Accept-Patch': 'application/vnd.api+json'}
+
+        input_data = request.get_json(force=True) or {}
+        schema = self.schema_class()
+
+        try:
+            data, _ = schema.load(input_data)
+        except ValidationError as err:
+            return {'message': err.args[0]}, 415
+        except Exception as err:
+            return {'message': err.args[0]}, 422
+
         new_item = self.model_class(**data)
         db.session.add(new_item)
         db.session.commit()
+
         NotificationService.broadcast_message({'event': 'created',
                                                'type': self.schema_class.Meta.type_,
                                                'id': new_item.id})
+
         return '', 204, {'Content-Location': url_for(self.record_api.scoped_endpoint(),
                                                      item_id=new_item.id)}
 
 
 def make_api(flask_restful_app, name, model_class, schema_class,
              api_authorizers=None, record_authorizer=None):
+    """Helper function to build an API for a schema.
+
+    record_authorizer: instance of a woodbox.access_control.record.RecordAccessControl.
+
+    api_authorizers: list of decorators, for example the authorize()
+    member of an woodbox.access_control.api.Acl.
+
+    """
     # TODO: we could have a schema_class per role
     if api_authorizers is None:
         method_decorators = []
     else:
         method_decorators = api_authorizers
-    method_decorators.append(flask_restful_app.authenticator.authenticate)
+    method_decorators.append(HMACAuthenticator.authenticate)
 
     # Create a subclass of Record[List]API and register the resource with the app.
     t = type(str(name+'API'), (RecordAPI,),

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, unicode_literals
 
-import datetime
 import urllib
+import urlparse
 
+from datetime import datetime, timedelta
 from functools import wraps
 from hashlib import sha256
 from hmac import new as hmac_new
@@ -36,6 +37,63 @@ except ImportError:
 
 class HMACAuthenticator(object):
     """Analyze a request and find from which user it originates."""
+
+    @staticmethod
+    def get_authorization_headers(session_id, secret, path,
+                                  query_string=None, method='GET',
+                                  content_type='', body='',
+                                  host='localhost'):
+
+        canonical_uri = urllib.quote(path.strip())
+        if query_string is not None:
+            canonical_query_string = urlparse.parse_qsl(query_string, True, True)
+            canonical_query_string.sort() # will sort by name, then by value
+            canonical_query_string = urllib.urlencode(canonical_query_string)
+        else:
+            canonical_query_string = ''
+
+        payload_hash = sha256(body).hexdigest()
+        now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+
+        headers = {
+            'content-type': content_type,
+            'host': host,
+            'x-woodbox-content-sha256': payload_hash,
+            'x-woodbox-timestamp': now
+        }
+
+        signed_headers = sorted(['content-type', 'host','x-woodbox-content-sha256','x-woodbox-timestamp'])
+
+        canonical_headers = []
+        for h in signed_headers:
+            canonical_headers.append(h+':'+headers[h])
+        canonical_headers = '\n'.join(canonical_headers).encode('utf-8')
+        signed_headers = ';'.join(signed_headers)
+        canonical_request = '\n'.join([method, path,
+                                       canonical_query_string,
+                                       canonical_headers,
+                                       signed_headers, payload_hash])
+
+        string_to_sign = '\n'.join(['WOODBOX-HMAC-SHA256', now, sha256(canonical_request).hexdigest()])
+        signing_key = secret.encode('utf-8')
+        signature = hmac_new(signing_key, string_to_sign, sha256).hexdigest()
+
+        auth = {
+            'Credential': session_id,
+            'SignedHeaders': signed_headers,
+            'Signature': signature
+        }
+        auth = [k+'='+v for k,v in auth.iteritems()]
+        auth = ','.join(auth)
+        auth_str = ' '.join(['Woodbox-HMAC-SHA256', auth]);
+
+        auth_headers = {
+            'Authorization': auth_str,
+            'x-woodbox-content-sha256': payload_hash,
+            'x-woodbox-timestamp': now
+        }
+
+        return auth_headers
 
     @staticmethod
     def parse_authorization_header(header):
@@ -72,7 +130,7 @@ class HMACAuthenticator(object):
             signature = auth['signature']
         except KeyError as e:
             g.user = None
-            g.user_reason = 'Missing parameter: ' + e.args[0]
+            g.user_reason = 'Missing parameter: {}'.format(e.args[0])
             return False
 
         # Required headers are the headers that MUST be included in the canonical headers.
@@ -99,8 +157,8 @@ class HMACAuthenticator(object):
 
         # Check the age of the request. It must not be older than 5 minutes.
         request_time = strptime_iso8601(headers['x-woodbox-timestamp'])
-        now = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
-        max_age = datetime.timedelta(minutes=5)
+        now = datetime.utcnow().replace(tzinfo=pytz.utc)
+        max_age = timedelta(minutes=5)
         if abs(request_time - now) > max_age:
             g.user = None
             g.user_reason = 'Request is too old.'
@@ -161,8 +219,8 @@ class HMACAuthenticator(object):
             g.user_reason = 'Signature do not match'
             return False
 
-
-    def authenticate(self, f):
+    @staticmethod
+    def authenticate(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             headers = dict()
@@ -173,9 +231,9 @@ class HMACAuthenticator(object):
             g.user_reason = "No valid authorization header."
 
             if 'authorization' in headers:
-                method, auth = self.parse_authorization_header(headers['authorization'])
+                method, auth = HMACAuthenticator.parse_authorization_header(headers['authorization'])
                 if method[:8].lower() == 'woodbox-':
-                    self.verify(method[8:].lower(), auth, headers)
+                    HMACAuthenticator.verify(method[8:].lower(), auth, headers)
 
             return f(*args, **kwargs)
 
