@@ -5,7 +5,7 @@ import unittest
 
 from sqlalchemy.exc import IntegrityError
 
-from woodbox.access_control.record import And, Or, IsOwner, IsUser1, HasRole, InRecordACL
+from woodbox.access_control.record import And, Or, OpSwitch, IsOwner, IsUser1, HasRole, InRecordACL
 from woodbox.db import db
 from woodbox.models.record_acl_model import RecordACLModel, make_record_acl
 from woodbox.models.user_model import WBRoleModel, WBUserModel
@@ -380,5 +380,40 @@ class RecordAccessTestCase(FlaskTestCase):
             ids = [i[0] for i in items]
             self.assertNotIn(self.d1, ids)
             self.assertNotIn(self.d2, ids)
+            self.assertNotIn(self.d3, ids)
+            self.assertNotIn(self.d4, ids)
+
+    def test_op_switch(self):
+        with self.app.test_request_context('/'):
+            query = MyModel.query
+            is_owner = IsOwner()
+            ac = OpSwitch(update_ac=is_owner, delete_ac=is_owner)
+            query = ac.alter_query('read', query, self.u1, 'My', MyModel)
+            items = query.values(MyModel.id)
+            ids = [i[0] for i in items]
+            self.assertIn(self.d1, ids)
+            self.assertIn(self.d2, ids)
+            self.assertIn(self.d3, ids)
+            self.assertIn(self.d4, ids)
+
+            query = MyModel.query
+            is_owner = IsOwner()
+            ac = OpSwitch(update_ac=is_owner, delete_ac=is_owner)
+            query = ac.alter_query('update', query, self.u1, 'My', MyModel)
+            items = query.values(MyModel.id)
+            ids = [i[0] for i in items]
+            self.assertIn(self.d1, ids)
+            self.assertIn(self.d2, ids)
+            self.assertNotIn(self.d3, ids)
+            self.assertNotIn(self.d4, ids)
+
+            query = MyModel.query
+            is_owner = IsOwner()
+            ac = OpSwitch(update_ac=is_owner, delete_ac=is_owner)
+            query = ac.alter_query('delete', query, self.u1, 'My', MyModel)
+            items = query.values(MyModel.id)
+            ids = [i[0] for i in items]
+            self.assertIn(self.d1, ids)
+            self.assertIn(self.d2, ids)
             self.assertNotIn(self.d3, ids)
             self.assertNotIn(self.d4, ids)

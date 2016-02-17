@@ -69,6 +69,26 @@ class Or(RecordAccessControl):
         return {'outerjoin': outerjoins, 'filter': or_(*filters)}
 
 
+class OpSwitch(RecordAccessControl):
+    def __init__(self, read_ac=None, update_ac=None, delete_ac=None, *args, **kwargs):
+        self.read_ac = read_ac
+        self.update_ac = update_ac
+        self.delete_ac = delete_ac
+        super(OpSwitch, self).__init__(*args, **kwargs);
+
+    def get_alteration(self, op, user, item_type, model_class):
+        outerjoins = []
+        filters = []
+        if op == 'read' and self.read_ac is not None:
+            return self.read_ac.get_alteration(op, user, item_type, model_class)
+        elif op == 'update' and self.update_ac is not None:
+            return self.update_ac.get_alteration(op, user, item_type, model_class)
+        elif op == 'delete' and self.delete_ac is not None:
+            return self.delete_ac.get_alteration(op, user, item_type, model_class)
+        else:
+            return super(OpSwitch, self).get_alteration(op, user, item_type, model_class)
+
+
 class IsOwner(RecordAccessControl):
     """Alter a query to only return records owned by `user`."""
     def __init__(self, owner_id_column="owner_id", *args, **kwargs):
