@@ -185,12 +185,9 @@ class HMACAuthenticator(object):
 
         # Build the canonical query string
         canonical_query_string = []
-        args = sorted(request.args.iterkeys())
-        for key in args:
-            values = sorted(request.args.getlist(key))
-            for v in values:
-                canonical_query_string.append(urllib.quote(key, '')+'='+urllib.quote(v, ''))
-        canonical_query_string = '&'.join(canonical_query_string).encode('utf-8')
+        args = request.args.items(multi=True)
+        args.sort()
+        canonical_query_string = urllib.urlencode(args)
 
         # Build the canonical headers string.
         canonical_headers = []
