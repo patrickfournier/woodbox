@@ -5,6 +5,8 @@ import os
 
 import sqlalchemy
 
+from flask import _app_ctx_stack
+
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.engine import reflection
 from sqlalchemy.schema import (
@@ -25,14 +27,23 @@ class Database(SQLAlchemy):
         self.initializers.append(initializer)
 
     def initialize(self):
-        self.drop_all()
+        if self.app is not None:
+            app = self.app
+        else:
+            ctx = _app_ctx_stack.top
+            if ctx is not None:
+                app = ctx.app
+
+        Database.drop_all(app.config['SQLALCHEMY_DATABASE_URI'])
         self.create_all()
         for i in self.initializers:
             i().do_init()
 
     @staticmethod
-    def drop_all():
-        info = make_url(os.getenv('WOODBOX_DATABASE_URI', 'sqlite+pysqlite://'))
+    def drop_all(db_url=None):
+        if db_url is None:
+            db_url = os.getenv('WOODBOX_DATABASE_URI', 'sqlite+pysqlite://')
+        info = make_url(db_url)
         engine = sqlalchemy.create_engine(info)
 
         conn = engine.connect()
