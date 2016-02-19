@@ -10,7 +10,7 @@ class RecordACLModel(db.Model):
     record_type = db.Column(db.String(100), nullable=False)
     record_id = db.Column(db.Integer, nullable=False)
     user_role_id = db.Column(db.Integer, db.ForeignKey('wb_role_model.id'), nullable=False)
-    permission = db.Column(db.Enum('read', 'update', 'delete'), nullable=False)
+    permission = db.Column(db.Enum('read', 'update', 'delete', name="permissions"), nullable=False)
 
     __table_args__ = (db.UniqueConstraint('record_type', 'record_id',
                                           'user_role_id',

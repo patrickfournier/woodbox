@@ -7,9 +7,11 @@ import string
 import unittest
 import warnings
 
+import sqlalchemy
+
 from flask import Flask
 from sqlalchemy.engine.url import make_url
-
+from sqlalchemy_utils.functions import create_database, drop_database, database_exists
 from woodbox.db import db
 
 
@@ -19,10 +21,16 @@ class FlaskTestCase(unittest.TestCase):
         # Example URI:
         # - sqlite+pysqlite:////tmp/test.sqlite
         # - mysql+mysqldb://woodbox_test:woodbox_test@localhost/woodbox_test
+        # - postgresql+psycopg2://woodbox_test:woodbox_test@localhost/woodbox_test
         self.app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('WOODBOX_DATABASE_URI', 'sqlite+pysqlite://')
         self.app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         self.app.config['PASSWORD_SALT'] = 'salt'
         self.app.config['TESTING'] = True
+
+        if self.app.config['SQLALCHEMY_DATABASE_URI'] != 'sqlite+pysqlite://' \
+        and not database_exists(self.app.config['SQLALCHEMY_DATABASE_URI']):
+            create_database(self.app.config['SQLALCHEMY_DATABASE_URI'])
+
         db.init_app(self.app)
 
         if self.app.config['SQLALCHEMY_DATABASE_URI'][:5] == 'mysql':
@@ -30,11 +38,10 @@ class FlaskTestCase(unittest.TestCase):
             warnings.simplefilter('error')
 
     def tearDown(self):
-        with self.app.test_request_context('/'):
-            if db.engine.name == 'sqlite':
-                url = make_url(self.app.config['SQLALCHEMY_DATABASE_URI'])
-                if url.database is not None:
-                    os.remove(url.database)
+        if self.app.config['SQLALCHEMY_DATABASE_URI'] != 'sqlite+pysqlite://':
+            # Dropping the database is necessary for postgresql, in order
+            # to reset the autoincrement counters.
+            drop_database(self.app.config['SQLALCHEMY_DATABASE_URI'])
 
     @staticmethod
     def str_n(n):

@@ -23,6 +23,7 @@ class RecordAccessTestCase(FlaskTestCase):
         super(RecordAccessTestCase, self).setUp()
         with self.app.test_request_context('/'):
             db.initialize()
+
             # Create some roles
             self.r1 = WBRoleModel(rolename='admin')
             db.session.add(self.r1)
@@ -94,9 +95,6 @@ class RecordAccessTestCase(FlaskTestCase):
                                                permissions=['read']))
             db.session.commit()
 
-
-    def tearDown(self):
-        pass
 
     def test_is_owner_1(self):
         with self.app.test_request_context('/'):

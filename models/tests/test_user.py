@@ -38,6 +38,12 @@ class TestUser(FlaskTestCase):
             if db.engine.name == 'mysql':
                 self.assertRaises(Warning, db.session.commit)
                 db.session.rollback()
+            elif db.engine.name == 'postgresql':
+                # FIXME: Should be
+                # self.assertRaises(psycopg2.DataError,
+                # db.session.commit), but does not work.
+                self.assertRaises(Exception, db.session.commit)
+                db.session.rollback()
             else:
                 db.session.commit()
 
