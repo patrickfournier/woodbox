@@ -8,6 +8,7 @@ from flask import current_app
 from ..db import db, DatabaseInitializer
 from ..utils.pbkdf2_hmac import pbkdf2_hmac
 
+
 user_roles = db.Table('wb_user_roles_association',
                       db.Column('user_id', db.Integer,
                                 db.ForeignKey('wb_user_model.id'),
@@ -18,6 +19,10 @@ user_roles = db.Table('wb_user_roles_association',
 
 
 class WBRoleModel(db.Model):
+    """A user role.
+
+    Roles are used to manage access to resources.
+    """
     id = db.Column(db.Integer, db.Sequence('wb_role_model_id_seq'), primary_key=True)
     type = db.Column(db.String(50))
     rolename = db.Column(db.String(50), nullable=False, unique=True)
@@ -32,6 +37,7 @@ class WBRoleModel(db.Model):
 
     @classmethod
     def get_anonymous_role_id(cls):
+        """Return the anonymous role id."""
         if cls._anonymous_role_id is None:
             anonymous_role = WBRoleModel.query.filter_by(rolename=cls.anonymous_role_name).first()
             cls._anonymous_role_id = anonymous_role.id
@@ -39,6 +45,7 @@ class WBRoleModel(db.Model):
 
 
 class WBRoleModelInitializer(DatabaseInitializer):
+    """Database initializer for roles: insert the anonymous role."""
     @staticmethod
     def do_init():
         anonymous_role = WBRoleModel(rolename=WBRoleModel.anonymous_role_name)
@@ -48,6 +55,7 @@ class WBRoleModelInitializer(DatabaseInitializer):
 
 
 class WBUserModel(db.Model):
+    """A user of the API."""
     id = db.Column(db.Integer, db.Sequence('wb_user_model_id_seq'), primary_key=True)
     type = db.Column(db.String(50))
     username = db.Column(db.String(50), nullable=False, unique=True, index=True)

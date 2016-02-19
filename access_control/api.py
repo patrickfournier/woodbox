@@ -11,7 +11,31 @@ from flask_restful import abort
 from ..models.user_model import WBUserModel, WBRoleModel
 
 class Acl(miracle.Acl):
+    """Implements access control list on API functions."""
+
     def authorize(self, f):
+        """A decorator to add access control to an API function.
+
+        It uses the authenticated user role(s) to determine if the
+        user should have the right to call the function.
+
+        Use :meth:`grants` to define the ACL. For example::
+
+            my_acl.grants({
+                'admin': {
+                    'User': ['read'],
+                    'Node': ['create', 'read', 'update', 'delete'],
+                },
+                'user': {
+                    'User': ['read'],
+                    'Node': ['read'],
+                }
+            })
+
+        Arguments:
+        f -- The function to decorate. Its name should be ``post``, ``get``, ``patch`` or ``delete``.
+
+        """
         @wraps(f)
         def wrapper(*args, **kwargs):
             myself = f.__self__
