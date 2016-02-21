@@ -72,6 +72,8 @@ class SessionTestCase(FlaskTestCase):
             self.assertEqual(response.headers['content-type'], 'application/json')
             response = json.loads(response.data)
             self.assertEqual(response['err'], 0)
+            self.assertIn('session_id', response)
+            self.assertIn('session_secret', response)
 
             session = WBSessionModel.query.filter_by(user_id=self.u1).first()
             self.assertIsNotNone(session)
