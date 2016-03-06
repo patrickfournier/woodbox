@@ -137,7 +137,7 @@ class RecordAPITestCase(FlaskTestCase):
             response = c.post('/my-tests',
                                data=json.dumps(post_data),
                                headers={'Content-Type': 'application/vnd.api+json'})
-            self.assertEqual(response.status_code, 204)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(response.headers['Content-Location'], '/my-tests/4')
 
             # check if post was successful
@@ -320,7 +320,7 @@ class RecordAPITestCase(FlaskTestCase):
                                                                   body=post_data)
             headers['Content-Type'] = 'application/vnd.api+json'
             response = c.post('/my-tests', data=post_data, headers=headers)
-            self.assertEqual(response.status_code, 204)
+            self.assertEqual(response.status_code, 200)
             self.assertEqual(response.headers['Content-Location'], '/my-tests/4')
 
 

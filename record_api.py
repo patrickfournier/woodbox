@@ -135,6 +135,14 @@ class RecordListAPI(Resource):
                                                     g.user,
                                                     self.resource_name,
                                                     self.model_class)
+
+        # Filter using query parameters
+        for args, value in request.args.iteritems():
+            c = getattr(self.model_class, self.schema_class._declared_fields[args].attribute)
+            if value == '':
+                value = None
+            query = query.filter(c == value)
+
         items = query.all()
         return self.schema_class().dump(items, many=True).data
 
@@ -160,8 +168,8 @@ class RecordListAPI(Resource):
                                                'type': self.schema_class.Meta.type_,
                                                'id': new_item.id})
 
-        return '', 204, {'Content-Location': url_for(self.record_api.scoped_endpoint(),
-                                                     item_id=new_item.id)}
+        return (self.schema_class().dump(new_item, many=False).data,
+                200, {'Content-Location': url_for(self.record_api.scoped_endpoint(), item_id=new_item.id)})
 
 
 def make_api(flask_restful_app, name, model_class, schema_class,
