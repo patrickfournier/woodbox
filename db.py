@@ -23,8 +23,33 @@ class Database(SQLAlchemy):
         self.initializers = list()
         super(Database, self).__init__(*kargs, **kwargs)
 
-    def register_initializer(self, initializer):
-        self.initializers.append(initializer)
+    def register_initializer(self, initializer, dependencies):
+        self.initializers.append((initializer, set(dependencies)))
+
+    # TODO: add a test.
+    def sorted_initializers(self):
+        """Perform a topological sort on initializers.
+
+        Reference: http://stackoverflow.com/questions/11557241/python-sorting-a-dependency-list
+        """
+        pending = [(name, set(deps)) for name, deps in self.initializers] # copy deps so we can modify set in-place
+        emitted = []
+        while pending:
+            next_pending = []
+            next_emitted = []
+            for entry in pending:
+                name, deps = entry
+                deps.difference_update(emitted) # remove deps we emitted last pass
+                if deps: # still has deps? recheck during next pass
+                    next_pending.append(entry)
+                else: # no more deps? time to emit
+                    yield name
+                    emitted.append(name) # <-- not required, but helps preserve original ordering
+                    next_emitted.append(name) # remember what we emitted for difference_update() in next pass
+            if not next_emitted: # all entries have unmet deps, one of two things is wrong...
+                raise ValueError("cyclic or missing dependancy detected: %r" % (next_pending,))
+            pending = next_pending
+            emitted = next_emitted
 
     def initialize(self):
         if self.app is not None:
@@ -36,7 +61,7 @@ class Database(SQLAlchemy):
 
         Database.drop_all(app.config['SQLALCHEMY_DATABASE_URI'])
         self.create_all()
-        for i in self.initializers:
+        for i in self.sorted_initializers():
             i().do_init()
 
     @staticmethod
@@ -82,10 +107,12 @@ db = Database()
 
 class DatabaseInitializerMetaclass(type):
     def __init__(cls, name, bases, dct):
-        db.register_initializer(cls)
+        db.register_initializer(cls, cls.dependencies)
 
 class DatabaseInitializer(object):
     __metaclass__ = DatabaseInitializerMetaclass
+
+    dependencies = []
 
     def do_init(self):
         pass
