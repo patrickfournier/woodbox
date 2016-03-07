@@ -15,6 +15,9 @@ import pytz
 from flask import request, g
 from flask_restful import abort
 
+from twisted.logger import Logger
+log = Logger()
+
 from .models.session_model import WBSessionModel
 from .utils.time import strptime_iso8601
 
@@ -210,11 +213,19 @@ class HMACAuthenticator(object):
         if compare_digest(signature.encode('ascii', 'ignore'), computed_signature.encode('ascii', 'ignore')):
             g.user = session.user_id
             g.user_reason = 'Authenticated'
-            return True
+            success = True
         else:
             g.user = None
             g.user_reason = 'Signature do not match'
-            return False
+            log.debug("Authentication failure: signature do not match.\nExpected signature: {expected}\nComputed signature: {computed}\n\nString to sign:\n{sts}\n\nCanonical request:\n{cr}",
+                      expected=signature.encode('ascii', 'ignore'),
+                      computed=computed_signature.encode('ascii', 'ignore'),
+                      sts=string_to_sign,
+                      cr=canonical_request)
+            success = False
+
+        log.info("User {user} authenticated ({reason})", user=g.user, reason=g.user_reason)
+        return success
 
     @staticmethod
     def authenticate(f):
