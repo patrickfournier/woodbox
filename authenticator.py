@@ -13,7 +13,6 @@ import six
 import pytz
 
 from flask import request, g
-from flask_restful import abort
 
 from twisted.logger import Logger
 log = Logger()

@@ -36,39 +36,47 @@ class RecordAPI(Resource):
     def scoped_endpoint(cls):
         return '.' + cls.endpoint
 
+    def _get_item(self, item_id, operation):
+        query = self.model_class.query
+        if self.access_control is not None:
+            query = self.access_control.alter_query(operation, query,
+                                                    g.user,
+                                                    self.resource_name,
+                                                    self.model_class)
+        item = query.filter_by(id=item_id).first()
+        return item
+
     def get(self, item_id):
         try:
-            query = self.model_class.query
-            if self.access_control is not None:
-                query = self.access_control.alter_query('read', query,
-                                                        g.user,
-                                                        self.resource_name,
-                                                        self.model_class)
-            item = query.filter_by(id=item_id).first()
+            item = self._get_item(item_id, 'read')
         except IntegrityError:
-            abort(404, message="{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id))
+            # FIXME: error messages should be translated according to Accept-Language header.
+            abort(404, errors=["{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id)])
 
         if not item:
-            abort(404, message="{0} {1} doesn't exist or you do not have permission to view it.".format(self.schema_class.Meta.type_, item_id))
+            abort(404, errors=["{0} {1} doesn't exist or you do not have permission to view it.".format(self.schema_class.Meta.type_, item_id)])
         else:
             return self.schema_class().dump(item).data
 
     def delete(self, item_id):
-        query = self.model_class.query
-        if self.access_control is not None:
-            query = self.access_control.alter_query('delete', query,
-                                                    g.user,
-                                                    self.resource_name,
-                                                    self.model_class)
-        count = query.filter_by(id=item_id).delete()
-        if count > 0:
-            db.session.commit()
-            NotificationService.broadcast_message({'event': 'deleted',
-                                                   'type': self.schema_class.Meta.type_,
-                                                   'id': item_id})
-            return '', 204
+        try:
+            item = self._get_item(item_id, 'delete')
+        except IntegrityError:
+            abort(404, errors=["{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id)])
+
+        if not item:
+            abort(404, errors=["{0} {1} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id)])
         else:
-            abort(404, message="{0} {1} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id))
+            msg = item.checkDeletePrecondition()
+            if msg:
+                abort(400, errors=["{0}".format(msg)])
+            else:
+                db.session.delete(item)
+                db.session.commit()
+                NotificationService.broadcast_message({'event': 'deleted',
+                                                       'type': self.schema_class.Meta.type_,
+                                                       'id': item_id})
+                return '', 204
 
     def patch(self, item_id):
         if request.mimetype != 'application/vnd.api+json':
@@ -93,7 +101,7 @@ class RecordAPI(Resource):
         item = query.filter_by(id=item_id).first()
         if not item:
             # According to RFC5789, we may create the ressource, but we do not.
-            abort(404, message="{0} {1} doesn't exist or you do not have permission to modify it.".format(self.schema_class.Meta.type_, item_id))
+            abort(404, errors=["{0} {1} doesn't exist or you do not have permission to modify it.".format(self.schema_class.Meta.type_, item_id)])
 
         for key in data:
             setattr(item, key, data[key])

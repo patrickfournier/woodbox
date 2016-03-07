@@ -2,6 +2,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import os
+import types
 
 import sqlalchemy
 
@@ -47,7 +48,7 @@ class Database(SQLAlchemy):
                     emitted.append(name) # <-- not required, but helps preserve original ordering
                     next_emitted.append(name) # remember what we emitted for difference_update() in next pass
             if not next_emitted: # all entries have unmet deps, one of two things is wrong...
-                raise ValueError("cyclic or missing dependancy detected: %r" % (next_pending,))
+                raise ValueError("Cyclic or missing dependancy detected: {0}".format(next_pending))
             pending = next_pending
             emitted = next_emitted
 
@@ -116,3 +117,8 @@ class DatabaseInitializer(object):
 
     def do_init(self):
         pass
+
+
+def checkDeletePrecondition(s):
+    pass
+db.Model.checkDeletePrecondition = types.MethodType(checkDeletePrecondition, db.Model)

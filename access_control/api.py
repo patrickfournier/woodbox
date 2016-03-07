@@ -53,6 +53,6 @@ class Acl(miracle.Acl):
             if self.check_any(roles, myself.resource_name, funcname_to_action[f.__name__]):
                 return f(*args, **kwargs)
             else:
-                abort(405)
+                abort(405, errors=["User role is not in resource access control list for '{0}' operation.".format(funcname_to_action[f.__name__])])
 
         return wrapper
