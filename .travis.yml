@@ -15,7 +15,8 @@ env:
 before_install:
   - pip install codecov
 
-install: "pip install -r requirements.txt"
+install:
+  - pip install -r requirements.txt
 
 before_script:
   - sh -c "if [ $DB = mysql ]; then mysql -e 'create database IF NOT EXISTS woodbox_test'; fi"
