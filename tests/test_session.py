@@ -3,8 +3,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import json
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from time import sleep
+
+import arrow
 
 from flask import request
 
@@ -77,7 +79,7 @@ class SessionTestCase(FlaskTestCase):
 
             session = WBSessionModel.query.filter_by(user_id=self.u1).first()
             self.assertIsNotNone(session)
-            self.assertAlmostEqual(session.accessed, datetime.utcnow(), delta=timedelta(seconds=1))
+            self.assertAlmostEqual(session.accessed, arrow.utcnow(), delta=timedelta(seconds=1))
 
     def test_validate_bad_session(self):
         with self.app.test_client() as c:

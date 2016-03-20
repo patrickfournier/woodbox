@@ -3,11 +3,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 import json
 
-from datetime import datetime
 from hashlib import sha256, sha1
 from hmac import new as hmac_new
 
-import pytz
+import arrow
 
 from flask import g, request
 
@@ -77,7 +76,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             secret = response['session_secret']
 
             payload_hash = sha256('').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',
@@ -144,7 +143,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             c.post('/invalidate-session', data={'session_id': session_id})
 
             payload_hash = sha256('').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',
@@ -197,7 +196,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             c.post('/invalidate-session', data={'session_id': session_id})
 
             payload_hash = sha256('').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',
@@ -250,7 +249,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             c.post('/invalidate-session', data={'session_id': session_id})
 
             payload_hash = sha256('').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',
@@ -304,7 +303,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             c.post('/invalidate-session', data={'session_id': session_id})
 
             payload_hash = sha256('').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',
@@ -356,7 +355,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             secret = response['session_secret']
 
             payload_hash = sha256('').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',
@@ -459,7 +458,7 @@ class AuthenticatorTestCase(FlaskTestCase):
             secret = response['session_secret']
 
             payload_hash = sha256('bad').hexdigest()
-            now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+            now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
             headers = {
                 'content-type': '',

@@ -4,26 +4,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 import unittest
 
 from binascii import hexlify
-from datetime import datetime
 
-import pytz
-
-from woodbox.utils.time import strptime_iso8601
 from woodbox.utils.pbkdf2_hmac import pbkdf2_hmac
 
 class TestUtils(unittest.TestCase):
-    def test_strptime_iso8601(self):
-        tests = [
-            ('20101231T142342Z', datetime(2010, 12, 31, 14, 23, 42)),
-            ('20101231T142342-0500', datetime(2010, 12, 31, 19, 23, 42)),
-            ('20101231T142342+0100', datetime(2010, 12, 31, 13, 23, 42)),
-            ('20101231T232342-0500', datetime(2011, 1, 1, 4, 23, 42)),
-            ('20101231T002342+0100', datetime(2010, 12, 30, 23, 23, 42))
-        ]
-
-        for t in tests:
-            self.assertEqual(strptime_iso8601(t[0]), pytz.utc.localize(t[1]))
-
     def test_pbkdf2_hmac(self):
         tests = [
             (b'some_password', b'saltandpepper', b'1fa4e2cb077cc58d23d8e4305f23defa08e604383209c4ea5e3c0ea2181a0984'),

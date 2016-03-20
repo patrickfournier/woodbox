@@ -11,6 +11,7 @@ Twisted==15.5.0
 Werkzeug==0.11.2
 aniso8601==1.1.0
 argparse==1.2.1
+arrow==0.7.0
 autobahn==0.11.0
 cov-core==1.15.0
 coverage==4.0.3

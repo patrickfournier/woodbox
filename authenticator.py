@@ -4,13 +4,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 import urllib
 import urlparse
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from functools import wraps
 from hashlib import sha256
 from hmac import new as hmac_new
 
+import arrow
 import six
-import pytz
 
 from flask import request, g
 
@@ -19,7 +19,6 @@ log = Logger()
 
 from .models.session_model import WBSessionModel
 from .utils.time import strptime_iso8601
-
 
 try:
     from hmac import compare_digest
@@ -55,7 +54,7 @@ class HMACAuthenticator(object):
             canonical_query_string = ''
 
         payload_hash = sha256(body).hexdigest()
-        now = datetime.utcnow().replace(tzinfo=pytz.utc).strftime("%Y%m%dT%H%M%S")
+        now = arrow.utcnow().format("YYYYMMDDTHHmmssZ")
 
         headers = {
             'content-type': content_type,
@@ -158,8 +157,8 @@ class HMACAuthenticator(object):
             return False
 
         # Check the age of the request. It must not be older than 5 minutes.
-        request_time = strptime_iso8601(headers['x-woodbox-timestamp'])
-        now = datetime.utcnow().replace(tzinfo=pytz.utc)
+        request_time = arrow.get(headers['x-woodbox-timestamp'], ["YYYYMMDDTHHmmssZ", "YYYYMMDDTHHmmss"])
+        now = arrow.utcnow()
         max_age = timedelta(minutes=5)
         if abs(request_time - now) > max_age:
             g.user = None
