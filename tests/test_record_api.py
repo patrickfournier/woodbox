@@ -250,7 +250,7 @@ class RecordAPITestCase(FlaskTestCase):
             # get a forbidden record
             headers = HMACAuthenticator.get_authorization_headers(session_id, secret, '/my-tests/{}'.format(self.d2))
             response = c.get('/my-tests/{}'.format(self.d2), headers=headers)
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 403)
 
             # patch Alice's records
             patch_data = json.dumps({"data":
@@ -283,7 +283,7 @@ class RecordAPITestCase(FlaskTestCase):
             headers['Content-Type'] = 'application/vnd.api+json'
             response = c.patch('/my-tests/{}'.format(self.d2),
                                data=patch_data, headers=headers)
-            self.assertEqual(response.status_code, 404, response.data)
+            self.assertEqual(response.status_code, 403, response.data)
 
 
             # delete own file
@@ -301,7 +301,7 @@ class RecordAPITestCase(FlaskTestCase):
                                                                   '/my-tests/{}'.format(self.d2),
                                                                   method='DELETE')
             response = c.delete('/my-tests/{}'.format(self.d2), headers=headers)
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 403)
 
 
             # post

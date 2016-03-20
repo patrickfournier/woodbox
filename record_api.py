@@ -9,9 +9,11 @@ from flask_restful import Resource, abort
 from marshmallow.exceptions import ValidationError
 from sqlalchemy.exc import IntegrityError
 
+from twisted.logger import Logger
+log = Logger()
+
 from .authenticator import HMACAuthenticator
 from .db import db
-from .push_service import NotificationService
 
 class RecordAPI(Resource):
     """Base class to expose a db.Model rendered by a JSONAPISchema through
@@ -36,7 +38,7 @@ class RecordAPI(Resource):
     def scoped_endpoint(cls):
         return '.' + cls.endpoint
 
-    def _get_item(self, item_id, operation):
+    def _get_item(self, item_id, operation, check_existence):
         query = self.model_class.query
         if self.access_control is not None:
             query = self.access_control.alter_query(operation, query,
@@ -44,38 +46,43 @@ class RecordAPI(Resource):
                                                     self.resource_name,
                                                     self.model_class)
         item = query.filter_by(id=item_id).first()
-        return item
+
+        exists = None
+        if not item and check_existence:
+            exists = self.model_class.query.get(item_id) != None
+
+        return item, exists
 
     def get(self, item_id):
-        try:
-            item = self._get_item(item_id, 'read')
-        except IntegrityError:
-            # FIXME: error messages should be translated according to Accept-Language header.
-            abort(404, errors=["{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id)])
+        item, exists = self._get_item(item_id, 'read', check_existence=True)
 
         if not item:
-            abort(404, errors=["{0} {1} doesn't exist or you do not have permission to view it.".format(self.schema_class.Meta.type_, item_id)])
+            if exists is None:
+                abort(500)
+            elif not exists:
+                abort(404)
+            else:
+                abort(403)
         else:
             return self.schema_class().dump(item).data
 
     def delete(self, item_id):
-        try:
-            item = self._get_item(item_id, 'delete')
-        except IntegrityError:
-            abort(404, errors=["{0} {1} doesn't exist.".format(self.schema_class.Meta.type_, item_id)])
+        item, exists = self._get_item(item_id, 'delete', check_existence=True)
 
         if not item:
-            abort(404, errors=["{0} {1} doesn't exist or you do not have permission to delete it.".format(self.schema_class.Meta.type_, item_id)])
+            if exists is None:
+                abort(500)
+            elif not exists:
+                abort(404)
+            else:
+                abort(403)
         else:
             msg = item.checkDeletePrecondition()
             if msg:
-                abort(400, errors=["{0}".format(msg)])
+                abort(400, errors=[msg])
             else:
                 db.session.delete(item)
                 db.session.commit()
-                NotificationService.broadcast_message({'event': 'deleted',
-                                                       'type': self.schema_class.Meta.type_,
-                                                       'id': item_id})
                 return '', 204
 
     def patch(self, item_id):
@@ -88,30 +95,30 @@ class RecordAPI(Resource):
         try:
             data, _ = schema.load(input_data, partial=True)
         except ValidationError as err:
-            return {'message': err.args[0]}, 415
+            abort(415, errors=[err.args[0]])
         except Exception as err:
-            return {'message': err.args[0]}, 422
+            abort(422, errors=[err.args[0]])
 
-        query = self.model_class.query
-        if self.access_control is not None:
-            query = self.access_control.alter_query('update', query,
-                                                    g.user,
-                                                    self.resource_name,
-                                                    self.model_class)
-        item = query.filter_by(id=item_id).first()
+        item, exists = self._get_item(item_id, 'update', check_existence=True)
+
         if not item:
             # According to RFC5789, we may create the ressource, but we do not.
-            abort(404, errors=["{0} {1} doesn't exist or you do not have permission to modify it.".format(self.schema_class.Meta.type_, item_id)])
+            if exists is None:
+                abort(500)
+            elif not exists:
+                abort(404)
+            else:
+                abort(403)
+        else:
+            for key in data:
+                setattr(item, key, data[key])
 
-        for key in data:
-            setattr(item, key, data[key])
-        db.session.commit()
-
-        NotificationService.broadcast_message({'event': 'updated',
-                                               'type': self.schema_class.Meta.type_,
-                                               'id': item_id})
-
-        return '', 204, {'Content-Location': url_for(self.scoped_endpoint(), item_id=item_id)}
+            msg = item.checkUpdatePrecondition()
+            if msg:
+                abort(400, errors=[msg])
+            else:
+                db.session.commit()
+                return '', 204, {'Content-Location': url_for(self.scoped_endpoint(), item_id=item_id)}
 
 
 class RecordListAPI(Resource):
@@ -164,17 +171,13 @@ class RecordListAPI(Resource):
         try:
             data, _ = schema.load(input_data)
         except ValidationError as err:
-            return {'message': err.args[0]}, 415
+            abort(415, errors=[err.args[0]])
         except Exception as err:
-            return {'message': err.args[0]}, 422
+            abort(422, errors=[err.args[0]])
 
         new_item = self.model_class(**data)
         db.session.add(new_item)
         db.session.commit()
-
-        NotificationService.broadcast_message({'event': 'created',
-                                               'type': self.schema_class.Meta.type_,
-                                               'id': new_item.id})
 
         return (self.schema_class().dump(new_item, many=False).data,
                 200, {'Content-Location': url_for(self.record_api.scoped_endpoint(), item_id=new_item.id)})

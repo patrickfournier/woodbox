@@ -119,6 +119,12 @@ class DatabaseInitializer(object):
         pass
 
 
+# Patch db.Model class to add precondition checks.
+# Create precondition check should be done in constructor.
+def checkUpdatePrecondition(s):
+    pass
+db.Model.checkUpdatePrecondition = types.MethodType(checkUpdatePrecondition, db.Model)
+
 def checkDeletePrecondition(s):
     pass
 db.Model.checkDeletePrecondition = types.MethodType(checkDeletePrecondition, db.Model)

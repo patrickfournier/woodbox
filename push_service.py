@@ -5,6 +5,8 @@ import json
 
 from autobahn.twisted.websocket import WebSocketServerProtocol
 
+from sqlalchemy.event import listen
+
 from twisted.internet import reactor
 
 class PushServiceMetaclass(type):
@@ -41,5 +43,31 @@ class PushService(WebSocketServerProtocol):
             reactor.callFromThread(cls.sendMessage, c, payload)
 
 
+
 class NotificationService(PushService):
-    pass
+    @staticmethod
+    def notify_insert(mapper, connection, target):
+        NotificationService.broadcast_message({'event': 'created',
+                                               'type': target.__class__.__name__,
+                                               'id': target.id})
+
+    @staticmethod
+    def notify_update(mapper, connection, target):
+        NotificationService.broadcast_message({'event': 'updated',
+                                               'type': target.__class__.__name__,
+                                               'id': target.id})
+
+    @staticmethod
+    def notify_delete(mapper, connection, target):
+        NotificationService.broadcast_message({'event': 'deleted',
+                                               'type': target.__class__.__name__,
+                                               'id': target.id})
+
+    @classmethod
+    def register_model(cls, model_class, insert=True, update=True, delete=True):
+        if insert:
+            listen(model_class, 'after_insert', cls.notify_insert)
+        if update:
+            listen(model_class, 'after_update', cls.notify_update)
+        if delete:
+            listen(model_class, 'after_delete', cls.notify_delete)
