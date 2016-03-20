@@ -6,41 +6,52 @@ import uuid
 import sys
 
 from twisted.python import log
+from twisted.logger import Logger
 from twisted.internet import reactor
 from twisted.web.server import Site
 from twisted.web.wsgi import WSGIResource
 
-
-from flask import Flask, make_response, jsonify
+from flask import Flask
 
 from autobahn.twisted.websocket import WebSocketServerFactory
 from autobahn.twisted.resource import WebSocketResource, WSGIRootResource
 
+from kafka.common import NodeNotReadyError
+
+from kleverklog import KafkaLogService
+
 from .db import db
 from .push_service import NotificationService
+
+logger = Logger()
 
 def create_app(config):
     app = Flask(__name__)
     app.config.from_object(config)
+
+    log.startLogging(sys.stdout)
+
+    if config.KAFKA_LOG_ENABLE:
+        try:
+            KafkaLogService.activate(getattr(config, 'KAFKA_LOG_HOST', 'localhost:9092'))
+        except NodeNotReadyError:
+            logger.warn("Kafka is not ready and will not be used to write log messages.")
+
     config.init_app(app)
     db.init_app(app)
+
     return app
 
 def init_db():
     db.initialize()
 
-def create_server(app, port, debug=False):
-    app.debug = debug
-
-    if debug:
-        log.startLogging(sys.stdout) # FIXME: use config file
-
+def create_server(app, port):
     ##
     # create a Twisted Web resource for our WebSocket server
     ##
     ws_factory = WebSocketServerFactory(u"ws://127.0.0.1:5000",
-                                        debug=debug,
-                                        debugCodePaths=debug)
+                                        debug=app.debug,
+                                        debugCodePaths=app.debug)
     ws_factory.protocol = NotificationService
     ws_resource = WebSocketResource(ws_factory)
 
