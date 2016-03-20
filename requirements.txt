@@ -17,6 +17,8 @@ cov-core==1.15.0
 coverage==4.0.3
 inflect==0.2.5
 itsdangerous==0.24
+kafka-python==1.0.1
+logstash-formatter==0.5.8
 marshmallow==2.2.1
 marshmallow-jsonapi==0.3.0
 miracle-acl==0.0.4-1
