@@ -16,7 +16,7 @@ def authenticate():
 
     """
     try:
-        name = request.form['username']
+        name = request.form['username'].strip()
         password = request.form['password']
     except KeyError:
         return jsonify(err=2, message="Missing parameter.")
