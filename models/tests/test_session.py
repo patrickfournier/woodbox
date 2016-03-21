@@ -57,7 +57,7 @@ class TestSession(FlaskTestCase):
             self.assertTrue(read_session)
             self.assertNotEqual(read_session.created, read_session.accessed)
             self.assertNotAlmostEqual(read_session.created, arrow.utcnow(), delta=timedelta(seconds=1))
-            self.assertAlmostEqual(read_session.accessed, arrow.utcnow(), delta=timedelta(seconds=1))
+            self.assertAlmostEqual(read_session.accessed, arrow.utcnow(), delta=timedelta(seconds=2))
 
             sleep(1)
             self.assertTrue(session.touch())
@@ -65,7 +65,7 @@ class TestSession(FlaskTestCase):
             self.assertTrue(read_session)
             self.assertNotEqual(read_session.created, read_session.accessed)
             self.assertNotAlmostEqual(read_session.created, arrow.utcnow(), delta=timedelta(seconds=1))
-            self.assertAlmostEqual(read_session.accessed, arrow.utcnow(), delta=timedelta(seconds=1))
+            self.assertAlmostEqual(read_session.accessed, arrow.utcnow(), delta=timedelta(seconds=2))
 
             sleep(4)
             self.assertFalse(session.touch())
