@@ -18,7 +18,6 @@ from twisted.logger import Logger
 log = Logger()
 
 from .models.session_model import WBSessionModel
-from .utils.time import strptime_iso8601
 
 try:
     from hmac import compare_digest
