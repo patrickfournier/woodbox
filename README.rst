@@ -34,7 +34,7 @@ Installation
 ============
 
 1. Download the code with git
-2. Install the required packages: ``pip install -r REQUIREMENTS.txt``
+2. Install the required packages: ``pip install -r requirements.txt``
 
 Features
 ========
