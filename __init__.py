@@ -16,10 +16,6 @@ from flask import Flask
 from autobahn.twisted.websocket import WebSocketServerFactory
 from autobahn.twisted.resource import WebSocketResource, WSGIRootResource
 
-from kafka.common import NodeNotReadyError
-
-from kleverklog import KafkaLogService
-
 from .db import db
 from .push_service import NotificationService
 
@@ -32,6 +28,9 @@ def create_app(config):
     log.startLogging(sys.stdout)
 
     if config.KAFKA_LOG_ENABLE:
+        from kafka.common import NodeNotReadyError
+        from kleverklog.twisted_logger import KafkaLogService
+
         try:
             KafkaLogService.activate(getattr(config, 'KAFKA_LOG_HOST', 'localhost:9092'))
         except NodeNotReadyError:
